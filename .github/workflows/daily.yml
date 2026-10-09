@@ -1,0 +1,46 @@
+name: KRX 전종목 일봉·수급 수집
+on:
+  schedule:
+    - cron: "30 7 * * 1-5"
+    - cron: "50 9 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "probe / update / backfill"
+        required: true
+        default: "probe"
+        type: choice
+        options: [probe, update, backfill]
+      start:
+        description: "backfill 시작일(YYYYMMDD)"
+        required: false
+        default: "20251201"
+permissions:
+  contents: write
+concurrency:
+  group: krx-collect
+  cancel-in-progress: false
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 수집
+        env:
+          KRX_ID: ${{ secrets.KRX_ID }}
+          KRX_PW: ${{ secrets.KRX_PW }}
+          MODE: ${{ github.event.inputs.mode || 'update' }}
+          START: ${{ github.event.inputs.start || '20251201' }}
+        run: |
+          if [ "$MODE" = "backfill" ]; then python collect_krx.py backfill "$START"; else python collect_krx.py "$MODE"; fi
+      - name: 저장소에 반영
+        if: ${{ always() && (github.event.inputs.mode != 'probe') }}
+        run: |
+          git config user.name "krx-collector"
+          git config user.email "krx-collector@users.noreply.github.com"
+          git add -A data
+          if git diff --cached --quiet; then echo "변경 없음"; else git commit -m "data: $(TZ=Asia/Seoul date +'%Y-%m-%d %H:%M') 수집"; git pull --rebase --autostash || true; git push; fi
