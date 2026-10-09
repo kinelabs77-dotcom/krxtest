@@ -1,7 +1,7 @@
 name: KRX 전종목 일봉·수급 수집
 on:
   schedule:
-    - cron: "30 7 * * 1-5"
+    - cron: "5 7 * * 1-5"
     - cron: "50 9 * * 1-5"
   workflow_dispatch:
     inputs:
