@@ -1,0 +1,22 @@
+name: 장중 시세 출처 시험
+on:
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 출처별 응답 시험
+        run: |
+          echo "UTC: $(date -u)"; echo "KST: $(TZ=Asia/Seoul date)"
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36"
+          echo "=== 1. 네이버 polling"
+          curl -sS -m 20 -A "$UA" -w "\nHTTP %{http_code}\n" "https://polling.finance.naver.com/api/realtime?query=SERVICE_ITEM:005930,000660,247540" | head -c 2500
+          echo; echo "=== 2. 네이버 모바일 basic"
+          curl -sS -m 20 -A "$UA" -w "\nHTTP %{http_code}\n" "https://m.stock.naver.com/api/stock/005930/basic" | head -c 1500
+          echo; echo "=== 3. 야후 삼성전자 (코스피)"
+          curl -sS -m 20 -A "$UA" -w "\nHTTP %{http_code}\n" "https://query1.finance.yahoo.com/v8/finance/chart/005930.KS?interval=5m&range=1d" | head -c 1500
+          echo; echo "=== 4. 야후 에코프로비엠 (코스닥)"
+          curl -sS -m 20 -A "$UA" -w "\nHTTP %{http_code}\n" "https://query1.finance.yahoo.com/v8/finance/chart/247540.KQ?interval=5m&range=1d" | head -c 800
+          echo; echo "=== 5. KRX 접속"
+          curl -sS -m 20 -A "$UA" -o /dev/null -w "HTTP %{http_code}\n" "https://data.krx.co.kr/contents/MDC/MAIN/main/index.cmd"
