@@ -1,0 +1,34 @@
+name: 장중 현재가 수집
+on:
+  schedule:
+    # UTC 기준. 한국시간 09:00~15:30 사이 30분마다 + 14:45 (평일)
+    - cron: "*/30 0-6 * * 1-5"
+    - cron: "45 5 * * 1-5"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: intraday-collect
+  cancel-in-progress: true
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 수집
+        run: python collect_intraday.py
+      - name: 저장소에 반영
+        run: |
+          git config user.name "krx-collector"
+          git config user.email "krx-collector@users.noreply.github.com"
+          git add data/intraday.json
+          if git diff --cached --quiet; then echo "변경 없음"; exit 0; fi
+          git commit -m "intraday: $(TZ=Asia/Seoul date +'%Y-%m-%d %H:%M')"
+          for i in 1 2 3; do
+            git pull --rebase --autostash && git push && break
+            sleep 5
+          done
