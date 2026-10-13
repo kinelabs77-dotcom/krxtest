@@ -15,6 +15,11 @@ ITEMS = [
  ("n225","닛케이225","asia",".N225","pct"), ("hsi","항셍","asia",".HSI","pct"), ("sh","상해종합","asia",".SSEC","pct"),
  ("nvda","엔비디아","stk","NVDA","pct"), ("tsm","TSMC(ADR)","stk","TSM","pct"),
 ]
+EXTRA = {"es": ["@SP.1", "@ES.1", "ES.1"], "nq": ["@ND.1", "@NQ.1", "NQ.1"]}  # CNBC 선물 심볼 후보
+def pick(Q, key, sym):
+    for s in [sym] + EXTRA.get(key, []):
+        if s in Q: return Q[s]
+    return None
 def raw(url, headers=None, tries=3, timeout=20):
     last = None
     for i in range(tries):
@@ -29,7 +34,7 @@ def num(x):
     try: return float(str(x).replace(",", "").replace("%", "").replace("+", "").strip())
     except Exception: return None
 def cnbc():
-    syms = "|".join(s for _, _, _, s, _ in ITEMS if s)
+    syms = "|".join([s for _, _, _, s, _ in ITEMS if s] + [x for v in EXTRA.values() for x in v])
     url = "https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=" + urllib.request.quote(syms, safe="") + "&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json&events=1"
     j = json.loads(raw(url)); out = {}
     q = j["FormattedQuoteResult"]["FormattedQuote"]
@@ -64,8 +69,8 @@ def main():
         d = None
         try:
             if key == "btc": d = btc()
-            elif sym in Q:
-                r = Q[sym]; p = num(r.get("last")); pct = num(r.get("change_pct")); ch = num(r.get("change"))
+            elif pick(Q, key, sym) is not None:
+                r = pick(Q, key, sym); p = num(r.get("last")); pct = num(r.get("change_pct")); ch = num(r.get("change"))
                 if p is not None and pct is not None: d = {"price": p, "pct": pct, "chg": ch, "t": r.get("last_time")}
             if d is None and key in fb: d = naver_idx(fb[key])
             if d is None and key == "krw": d = naver_fx()
