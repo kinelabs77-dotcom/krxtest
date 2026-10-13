@@ -154,6 +154,8 @@ def charts(Q):
                 hm = t.strftime("%H%M")
                 if us and not ("0930" <= hm <= "1600"): continue
                 pts.append((t, hm, round(float(b["close"]), 2)))
+            if key in ("kospi", "kosdaq", "n225", "hsi", "sh") and pts:
+                dl = pts[-1][0].date(); pts = [p for p in pts if p[0].date() == dl]
             inter = [[hm, c] for _, hm, c in pts]
             d0 = pts[0][0].strftime("%Y%m%d")
             wd = "월화수목금토일"[pts[0][0].weekday()]
