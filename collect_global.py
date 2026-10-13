@@ -120,6 +120,44 @@ def probe_charts():
             with urllib.request.urlopen(req, timeout=20) as r: print("차트진단 OK", u[:90], r.read(500))
         except Exception as e:
             print("차트진단 실패", u[:90], repr(e)[:100])
+CHART_KEYS = ["spx","ixic","dji","sox","es","nq","vix","tnx","dxy","krw","wti","gold","kospi","kosdaq","n225","hsi","sh"]
+CH = dict(UA, Origin="https://www.cnbc.com", Referer="https://www.cnbc.com/")
+def _bars(j):
+    pb = (j.get("barData") or {}).get("priceBars")
+    if not pb: raise ValueError(str(j.get("statusMessage") or list(j.keys()))[:140])
+    return pb
+def charts(Q):
+    out = {}
+    now = datetime.datetime.now(datetime.timezone.utc)
+    s14 = (now - datetime.timedelta(days=210)).strftime("%Y%m%d") + "000000"
+    e14 = (now + datetime.timedelta(days=2)).strftime("%Y%m%d") + "000000"
+    for key in CHART_KEYS:
+        base = next((s for k, _, _, s, _ in ITEMS if k == key), None)
+        r = pick(Q, key, base) if base else None
+        csym = (r or {}).get("symbol") or base
+        if not csym: continue
+        qs = urllib.request.quote(csym, safe="@.=")
+        try:
+            ib = _bars(json.loads(raw("https://ts-api.cnbc.com/harmony/app/charts/1D.json?symbol=" + qs, CH, tries=2)))
+            db = _bars(json.loads(raw("https://ts-api.cnbc.com/harmony/app/bars/%s/1D/%s/%s/adjusted/EXTENDED.json" % (qs, s14, e14), CH, tries=2)))
+        except Exception as e:
+            print("차트 실패", key, csym, repr(e)[:150]); continue
+        try:
+            sel = [b for b in ib if int(b["tradeTime"][10:12]) % 5 == 0]
+            inter = [[b["tradeTime"][8:12], round(float(b["close"]), 2)] for b in sel]
+            d0 = ib[0]["tradeTime"][:8]
+            wd = "월화수목금토일"[datetime.datetime.strptime(d0, "%Y%m%d").weekday()]
+            cl = [float(b["close"]) for b in db]
+            def ma(n): return [round(sum(cl[i - n + 1:i + 1]) / n, 2) if i >= n - 1 else None for i in range(len(cl))]
+            m20, m60 = ma(20), ma(60)
+            k = 66
+            daily = [[b["tradeTime"][:8], round(float(b["open"]), 2), round(float(b["high"]), 2), round(float(b["low"]), 2), round(float(b["close"]), 2)] for b in db][-k:]
+            prev = num((r or {}).get("previous_day_closing"))
+            out[key] = {"sym": csym, "prev": prev, "ses": "%s/%s(%s)" % (int(d0[4:6]), int(d0[6:8]), wd), "i": inter, "d": daily, "m20": m20[-k:], "m60": m60[-k:]}
+            print("차트 OK", key, csym, "분봉", len(inter), "일봉", len(daily), "원본", len(ib), len(db))
+        except Exception as e:
+            print("차트 변환 실패", key, repr(e)[:150], str(ib[:1])[:200])
+    return out or None
 def main():
     try: Q = cnbc()
     except Exception as e: print("CNBC 실패:", repr(e)[:150]); Q = {}
@@ -144,9 +182,7 @@ def main():
     print("받은 지표 %d/%d" % (len(out), len(ITEMS)))
     if len(out) < len(ITEMS) // 2: sys.exit("절반 미만 — 파일을 갱신하지 않습니다")
     kst = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
-    res = {"asof": kst.isoformat(timespec="minutes"), "count": len(out), "items": out, "fng": fng(), "themes": themes()}
-    try: probe_charts()
-    except Exception as e: print("probe 오류", repr(e)[:100])
+    res = {"asof": kst.isoformat(timespec="minutes"), "count": len(out), "items": out, "fng": fng(), "themes": themes(), "charts": charts(Q)}
     os.makedirs("data", exist_ok=True)
     with open("data/global.json", "w", encoding="utf-8") as f: json.dump(res, f, ensure_ascii=False, indent=1)
 if __name__ == "__main__": main()
