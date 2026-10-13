@@ -12,16 +12,18 @@ ITEMS = [
  ("n225","닛케이225","asia","^N225","pct"), ("hsi","항셍","asia","^HSI","pct"), ("sh","상해종합","asia","000001.SS","pct"),
  ("nvda","엔비디아","stk","NVDA","pct"), ("tsm","TSMC(ADR)","stk","TSM","pct"),
 ]
-def get(url, tries=3):
+def raw(url, tries=2, timeout=15):
     last = None
     for i in range(tries):
         try:
             req = urllib.request.Request(url, headers=UA)
-            with urllib.request.urlopen(req, timeout=20) as r:
-                return json.loads(r.read().decode("utf-8"))
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return r.read().decode("utf-8")
         except Exception as e:
-            last = e; time.sleep(1.5 * (i + 1))
+            last = e; print("  오류", url[:70], repr(e)[:120]); time.sleep(1.5)
     raise last
+def get(url, tries=2):
+    return json.loads(raw(url, tries))
 def chart(sym):
     for host in ("query1", "query2"):
         try:
@@ -41,7 +43,7 @@ def fng():
         f = j["fear_and_greed"]
         return {"score": round(f["score"], 1), "rating": f["rating"], "prev_close": round(f.get("previous_close", 0), 1), "week": round(f.get("previous_1_week", 0), 1), "month": round(f.get("previous_1_month", 0), 1), "t": f.get("timestamp")}
     except Exception as e:
-        print("fng 실패:", e); return None
+        print("fng 실패:", repr(e)[:150]); return None
 def main():
     out = {}; ok = 0
     for key, name, grp, sym, kind in ITEMS:
@@ -53,6 +55,13 @@ def main():
         else: row["chg"] = round((d["price"] / d["prev"] - 1) * 100, 2); row["unit"] = "%"
         out[key] = row
     print("받은 지표 %d/%d" % (ok, len(ITEMS)))
+    if ok == 0:
+        for u in ("https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1d&range=5d", "https://stooq.com/q/d/l/?s=%5Espx&i=d", "https://production.dataviz.cnn.io/index/fearandgreed/graphdata", "https://api.coinbase.com/v2/prices/BTC-USD/spot", "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT", "https://stooq.com/q/l/?s=%5Espx&f=sd2t2ohlcv&h&e=csv"):
+            try:
+                req = urllib.request.Request(u, headers=UA)
+                with urllib.request.urlopen(req, timeout=15) as r: print("진단 OK", r.status, u[:60], r.read(160))
+            except Exception as e:
+                print("진단 실패", u[:60], repr(e)[:160], getattr(e, "headers", None) and str(e.headers)[:200])
     if ok < len(ITEMS) // 2: sys.exit("절반 미만 — 파일을 갱신하지 않습니다")
     kst = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
     res = {"asof": kst.isoformat(timespec="minutes"), "count": ok, "items": out, "fng": fng()}
