@@ -12,18 +12,16 @@ ITEMS = [
  ("n225","닛케이225","asia","^N225","pct"), ("hsi","항셍","asia","^HSI","pct"), ("sh","상해종합","asia","000001.SS","pct"),
  ("nvda","엔비디아","stk","NVDA","pct"), ("tsm","TSMC(ADR)","stk","TSM","pct"),
 ]
-def raw(url, tries=2, timeout=15):
+def get(url, tries=3):
     last = None
     for i in range(tries):
         try:
             req = urllib.request.Request(url, headers=UA)
-            with urllib.request.urlopen(req, timeout=timeout) as r:
-                return r.read().decode("utf-8")
+            with urllib.request.urlopen(req, timeout=20) as r:
+                return json.loads(r.read().decode("utf-8"))
         except Exception as e:
-            last = e; print("  오류", url[:70], repr(e)[:120]); time.sleep(1.5)
+            last = e; time.sleep(1.5 * (i + 1))
     raise last
-def get(url, tries=2):
-    return json.loads(raw(url, tries))
 def chart(sym):
     for host in ("query1", "query2"):
         try:
@@ -43,8 +41,23 @@ def fng():
         f = j["fear_and_greed"]
         return {"score": round(f["score"], 1), "rating": f["rating"], "prev_close": round(f.get("previous_close", 0), 1), "week": round(f.get("previous_1_week", 0), 1), "month": round(f.get("previous_1_month", 0), 1), "t": f.get("timestamp")}
     except Exception as e:
-        print("fng 실패:", repr(e)[:150]); return None
+        print("fng 실패:", e); return None
+def probes():
+    BR = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36", "Accept": "application/json, text/plain, */*", "Accept-Language": "en-US,en;q=0.9", "Origin": "https://edition.cnn.com", "Referer": "https://edition.cnn.com/"}
+    cnbc = "https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=.SPX%7C.IXIC%7C.DJI%7C.SOX%7C.VIX%7C%40ES.1%7C%40NQ.1%7C%40CL.1%7C%40GC.1%7CUS10Y%7C.DXY%7CKRW%3D%7C.KS11%7C.KQ11%7C.N225%7C.HSI%7C.SSEC%7CNVDA%7CTSM&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json&events=1"
+    urls = [(cnbc, None), ("https://production.dataviz.cnn.io/index/fearandgreed/graphdata", BR), ("https://production.dataviz.cnn.io/index/fearandgreed/graphdata/2026-10-01", BR),
+            ("https://api.stock.naver.com/index/.DJI/basic", None), ("https://api.stock.naver.com/index/.INX/basic", None), ("https://api.stock.naver.com/index/.IXIC/basic", None),
+            ("https://m.stock.naver.com/front-api/marketIndex/productDetail?category=exchange&reutersCode=FX_USDKRW", None),
+            ("https://api.exchange.coinbase.com/products/BTC-USD/stats", None),
+            ("https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1d&range=5d", None)]
+    for u, h in urls:
+        try:
+            req = urllib.request.Request(u, headers=h or UA)
+            with urllib.request.urlopen(req, timeout=20) as r: print("진단 OK", r.status, u[:70], r.read(900))
+        except Exception as e:
+            print("진단 실패", u[:70], repr(e)[:120])
 def main():
+    probes(); return
     out = {}; ok = 0
     for key, name, grp, sym, kind in ITEMS:
         d = chart(sym)
@@ -55,13 +68,6 @@ def main():
         else: row["chg"] = round((d["price"] / d["prev"] - 1) * 100, 2); row["unit"] = "%"
         out[key] = row
     print("받은 지표 %d/%d" % (ok, len(ITEMS)))
-    if ok == 0:
-        for u in ("https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1d&range=5d", "https://stooq.com/q/d/l/?s=%5Espx&i=d", "https://production.dataviz.cnn.io/index/fearandgreed/graphdata", "https://api.coinbase.com/v2/prices/BTC-USD/spot", "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT", "https://stooq.com/q/l/?s=%5Espx&f=sd2t2ohlcv&h&e=csv"):
-            try:
-                req = urllib.request.Request(u, headers=UA)
-                with urllib.request.urlopen(req, timeout=15) as r: print("진단 OK", r.status, u[:60], r.read(160))
-            except Exception as e:
-                print("진단 실패", u[:60], repr(e)[:160], getattr(e, "headers", None) and str(e.headers)[:200])
     if ok < len(ITEMS) // 2: sys.exit("절반 미만 — 파일을 갱신하지 않습니다")
     kst = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
     res = {"asof": kst.isoformat(timespec="minutes"), "count": ok, "items": out, "fng": fng()}
