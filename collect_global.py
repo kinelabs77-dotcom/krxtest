@@ -126,6 +126,9 @@ def _bars(j):
     pb = (j.get("barData") or {}).get("priceBars")
     if not pb: raise ValueError(str(j.get("statusMessage") or list(j.keys()))[:140])
     return pb
+from zoneinfo import ZoneInfo
+ET = ZoneInfo("America/New_York")
+TZ = {"spx": ("America/New_York", "뉴욕시간"), "ixic": ("America/New_York", "뉴욕시간"), "dji": ("America/New_York", "뉴욕시간"), "sox": ("America/New_York", "뉴욕시간"), "vix": ("America/New_York", "뉴욕시간"), "tnx": ("America/New_York", "뉴욕시간"), "kospi": ("Asia/Seoul", "한국시간"), "kosdaq": ("Asia/Seoul", "한국시간"), "n225": ("Asia/Tokyo", "도쿄시간"), "hsi": ("Asia/Hong_Kong", "홍콩시간"), "sh": ("Asia/Shanghai", "상하이시간")}
 def charts(Q):
     out = {}
     now = datetime.datetime.now(datetime.timezone.utc)
@@ -143,17 +146,24 @@ def charts(Q):
         except Exception as e:
             print("차트 실패", key, csym, repr(e)[:150]); continue
         try:
-            sel = [b for b in ib if int(b["tradeTime"][10:12]) % 5 == 0]
-            inter = [[b["tradeTime"][8:12], round(float(b["close"]), 2)] for b in sel]
-            d0 = ib[0]["tradeTime"][:8]
-            wd = "월화수목금토일"[datetime.datetime.strptime(d0, "%Y%m%d").weekday()]
+            tzn, tzl = TZ.get(key, ("Asia/Seoul", "한국시간")); tzo = ZoneInfo(tzn); us = key in ("spx", "ixic", "dji", "sox")
+            pts = []
+            for b in ib:
+                t = datetime.datetime.strptime(b["tradeTime"][:12], "%Y%m%d%H%M").replace(tzinfo=ET).astimezone(tzo)
+                if t.minute % 5: continue
+                hm = t.strftime("%H%M")
+                if us and not ("0930" <= hm <= "1600"): continue
+                pts.append((t, hm, round(float(b["close"]), 2)))
+            inter = [[hm, c] for _, hm, c in pts]
+            d0 = pts[0][0].strftime("%Y%m%d")
+            wd = "월화수목금토일"[pts[0][0].weekday()]
             cl = [float(b["close"]) for b in db]
             def ma(n): return [round(sum(cl[i - n + 1:i + 1]) / n, 2) if i >= n - 1 else None for i in range(len(cl))]
             m20, m60 = ma(20), ma(60)
             k = 66
             daily = [[b["tradeTime"][:8], round(float(b["open"]), 2), round(float(b["high"]), 2), round(float(b["low"]), 2), round(float(b["close"]), 2)] for b in db][-k:]
             prev = num((r or {}).get("previous_day_closing"))
-            out[key] = {"sym": csym, "prev": prev, "ses": "%s/%s(%s)" % (int(d0[4:6]), int(d0[6:8]), wd), "i": inter, "d": daily, "m20": m20[-k:], "m60": m60[-k:]}
+            out[key] = {"sym": csym, "prev": prev, "ses": "%s/%s(%s)" % (int(d0[4:6]), int(d0[6:8]), wd), "tz": tzl, "i": inter, "d": daily, "m20": m20[-k:], "m60": m60[-k:]}
             print("차트 OK", key, csym, "분봉", len(inter), "일봉", len(daily), "원본", len(ib), len(db))
         except Exception as e:
             print("차트 변환 실패", key, repr(e)[:150], str(ib[:1])[:200])
