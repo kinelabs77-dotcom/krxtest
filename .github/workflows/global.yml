@@ -1,0 +1,29 @@
+name: global-indicators
+on:
+  schedule:
+    - cron: '15 21 * * 1-5'   # KST 06:15 화~토 (미국 정규장 마감 뒤)
+    - cron: '40 23 * * 0-4'   # KST 08:40 월~금 (한국장 개장 전, 선물 반영)
+    - cron: '35 6 * * 1-5'    # KST 15:35 월~금 (한국장 마감 뒤)
+    - cron: '30 13 * * 1-5'   # KST 22:30 월~금 (미국 장 초반)
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: global-indicators
+  cancel-in-progress: false
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python collect_global.py
+      - name: commit
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/global.json
+          git diff --cached --quiet || (git commit -m "global indicators $(date -u +%FT%H:%MZ)" && git pull --rebase origin main && git push)
