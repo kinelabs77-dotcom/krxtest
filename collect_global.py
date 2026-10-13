@@ -33,15 +33,58 @@ def raw(url, headers=None, tries=3, timeout=20):
 def num(x):
     try: return float(str(x).replace(",", "").replace("%", "").replace("+", "").strip())
     except Exception: return None
-def cnbc():
-    syms = "|".join([s for _, _, _, s, _ in ITEMS if s] + [x for v in EXTRA.values() for x in v])
-    url = "https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=" + urllib.request.quote(syms, safe="") + "&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json&events=1"
+def cnbc_fetch(symbols):
+    url = "https://quote.cnbc.com/quote-html-webservice/restQuote/symbolType/symbol?symbols=" + urllib.request.quote("|".join(symbols), safe="") + "&requestMethod=itv&noform=1&partnerId=2&fund=1&exthrs=1&output=json&events=1"
     j = json.loads(raw(url)); out = {}
     q = j["FormattedQuoteResult"]["FormattedQuote"]
     for r in (q if isinstance(q, list) else [q]):
-        if str(r.get("code")) not in ("0", "None") : continue
+        if str(r.get("code")) not in ("0", "None"): continue
         out[r.get("symbol")] = r
     return out
+def cnbc():
+    return cnbc_fetch([s for _, _, _, s, _ in ITEMS if s] + [x for v in EXTRA.values() for x in v])
+# 미국 테마 섹터(임의 구성 — 모닝레터와 다를 수 있음). 평균은 구성 종목 전일 등락률의 단순평균
+THEMES = [
+ ("기계·농기계", ["CAT","DE","CNH","AGCO","PCAR","CMI"]),
+ ("대형 기술주", ["AAPL","MSFT","GOOGL","AMZN","META","NFLX"]),
+ ("제약·바이오", ["LLY","JNJ","MRK","PFE","REGN","VRTX","ABBV","AMGN"]),
+ ("금융·가상자산", ["JPM","BAC","C","GS","MS","COIN","MSTR","HOOD"]),
+ ("AI반도체·아날로그 반도체", ["NVDA","AMD","AVGO","ARM","TSM","TXN","ADI","MRVL"]),
+ ("자동차·2차전지", ["TSLA","GM","F","RIVN","QS","ALB"]),
+ ("사이버보안", ["CRWD","PANW","FTNT","ZS","S","NET","OKTA"]),
+ ("AI서버·데이터센터 구축", ["SMCI","DELL","VRT","ANET","HPE","CRWV","ORCL"]),
+ ("원전·전력장비", ["OKLO","SMR","CEG","VST","GEV","CCJ","NNE","ETN"]),
+ ("메모리", ["MU","SNDK","WDC","STX"]),
+ ("우주항공·양자·로봇", ["RKLB","ASTS","LUNR","IONQ","RGTI","QBTS","JOBY"]),
+]
+KO = {"CAT":"캐터필러","DE":"디어","CNH":"CNH 인더스트리얼","AGCO":"AGCO","PCAR":"패카","CMI":"커민스","AAPL":"애플","MSFT":"마이크로소프트","GOOGL":"알파벳","AMZN":"아마존","META":"메타","NFLX":"넷플릭스",
+ "LLY":"일라이 릴리","JNJ":"존슨앤드존슨","MRK":"머크","PFE":"화이자","REGN":"리제네론","VRTX":"버텍스","ABBV":"애브비","AMGN":"암젠",
+ "JPM":"JP모건","BAC":"뱅크오브아메리카","C":"씨티그룹","GS":"골드만삭스","MS":"모건스탠리","COIN":"코인베이스","MSTR":"스트래티지","HOOD":"로빈후드",
+ "NVDA":"엔비디아","AMD":"AMD","AVGO":"브로드컴","ARM":"암 홀딩스","TSM":"TSMC","TXN":"텍사스 인스트루먼트","ADI":"아날로그 디바이시스","MRVL":"마벨",
+ "TSLA":"테슬라","GM":"GM","F":"포드","RIVN":"리비안","QS":"퀀텀스케이프","ALB":"앨버말",
+ "CRWD":"크라우드스트라이크","PANW":"팔로알토","FTNT":"포티넷","ZS":"지스케일러","S":"센티넬원","NET":"클라우드플레어","OKTA":"옥타",
+ "SMCI":"슈퍼 마이크로 컴퓨터","DELL":"델","VRT":"버티브","ANET":"아리스타","HPE":"HPE","CRWV":"코어위브","ORCL":"오라클",
+ "OKLO":"오클로","SMR":"뉴스케일","CEG":"컨스텔레이션","VST":"비스트라","GEV":"GE 버노바","CCJ":"카메코","NNE":"나노뉴클리어","ETN":"이튼",
+ "MU":"마이크론","SNDK":"샌디스크","WDC":"웨스턴디지털","STX":"시게이트",
+ "RKLB":"로켓랩","ASTS":"AST 스페이스모바일","LUNR":"인튜이티브 머신스","IONQ":"아이온큐","RGTI":"리게티","QBTS":"디웨이브","JOBY":"조비"}
+def themes():
+    try:
+        Q = cnbc_fetch(sorted({s for _, l in THEMES for s in l}))
+    except Exception as e:
+        print("테마 실패:", repr(e)[:120]); return None
+    out = []
+    for name, lst in THEMES:
+        mem = []
+        for sy in lst:
+            r = Q.get(sy); c = num(r.get("change_pct")) if r else None
+            if c is not None: mem.append([sy, KO.get(sy, sy), round(c, 2)])
+        if len(mem) < 3: print("테마 종목 부족", name, len(mem)); continue
+        avg = sum(m[2] for m in mem) / len(mem)
+        mem.sort(key=lambda m: m[2], reverse=avg >= 0)  # 평균과 같은 방향의 극단 종목이 맨 앞(주도 종목)
+        out.append({"name": name, "avg": round(avg, 2), "n": len(mem), "members": mem})
+    out.sort(key=lambda t: -t["avg"])
+    print("테마 %d/%d" % (len(out), len(THEMES)))
+    return out or None
 def naver_idx(code):
     j = json.loads(raw("https://api.stock.naver.com/index/%s/basic" % code, tries=2))
     p = num(j["closePrice"]); pct = num(j["fluctuationsRatio"])
@@ -57,9 +100,26 @@ def fng():
     try:
         j = json.loads(raw("https://production.dataviz.cnn.io/index/fearandgreed/graphdata", CNN_H, tries=2))
         f = j["fear_and_greed"]
-        return {"score": round(f["score"], 1), "rating": f["rating"], "prev_close": round(f.get("previous_close", 0), 1), "week": round(f.get("previous_1_week", 0), 1), "month": round(f.get("previous_1_month", 0), 1), "t": f.get("timestamp")}
+        hist = []
+        for p in (j.get("fear_and_greed_historical") or {}).get("data", []):
+            try: hist.append([datetime.datetime.fromtimestamp(p["x"] / 1000, datetime.timezone.utc).strftime("%Y-%m-%d"), round(p["y"], 1)])
+            except Exception: pass
+        return {"score": round(f["score"], 1), "rating": f["rating"], "prev_close": round(f.get("previous_close", 0), 1), "week": round(f.get("previous_1_week", 0), 1), "month": round(f.get("previous_1_month", 0), 1), "year": round(f.get("previous_1_year", 0), 1), "t": f.get("timestamp"), "hist": hist[-380:]}
     except Exception as e:
         print("fng 실패:", repr(e)[:150]); return None
+def probe_charts():
+    H = dict(UA, Origin="https://www.cnbc.com", Referer="https://www.cnbc.com/")
+    for u in ("https://ts-api.cnbc.com/harmony/app/charts/1D.json?symbol=.DJI",
+              "https://ts-api.cnbc.com/harmony/app/bars/.DJI/5M/20261012/20261013/adjusted/EXTENDED.json",
+              "https://ts-api.cnbc.com/harmony/app/bars/.DJI/1D/20260701/20261013/adjusted/EXTENDED.json",
+              "https://ts-api.cnbc.com/harmony/app/bars/.SPX/1D/20260701/20261013/adjusted/EXTENDED.json",
+              "https://api.stock.naver.com/chart/foreign/index/.DJI?periodType=dayCandle&range=3m",
+              "https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=86400"):
+        try:
+            req = urllib.request.Request(u, headers=H)
+            with urllib.request.urlopen(req, timeout=20) as r: print("차트진단 OK", u[:90], r.read(500))
+        except Exception as e:
+            print("차트진단 실패", u[:90], repr(e)[:100])
 def main():
     try: Q = cnbc()
     except Exception as e: print("CNBC 실패:", repr(e)[:150]); Q = {}
@@ -84,7 +144,10 @@ def main():
     print("받은 지표 %d/%d" % (len(out), len(ITEMS)))
     if len(out) < len(ITEMS) // 2: sys.exit("절반 미만 — 파일을 갱신하지 않습니다")
     kst = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
-    res = {"asof": kst.isoformat(timespec="minutes"), "count": len(out), "items": out, "fng": fng()}
+    res = {"asof": kst.isoformat(timespec="minutes"), "count": len(out), "items": out, "fng": fng(), "themes": themes()}
+    try: probe_charts()
+    except Exception as e: print("probe 오류", repr(e)[:100])
     os.makedirs("data", exist_ok=True)
     with open("data/global.json", "w", encoding="utf-8") as f: json.dump(res, f, ensure_ascii=False, indent=1)
 if __name__ == "__main__": main()
+
