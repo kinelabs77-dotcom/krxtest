@@ -170,71 +170,25 @@ def charts(Q):
         except Exception as e:
             print("차트 변환 실패", key, repr(e)[:150], str(ib[:1])[:200])
     return out or None
-def _find_hist(o, out=None):
-    """JSON 어디든 closePrice+날짜가 있는 항목 목록을 찾아 [[YYYY-MM-DD, 값], ...]로 만든다."""
-    out = [] if out is None else out
-    if isinstance(o, dict):
-        d = o.get("localDate") or o.get("localTradedAt") or o.get("date")
-        p = num(o.get("closePrice") if "closePrice" in o else o.get("close"))
-        if d and p is not None:
-            d = str(d)[:10] if "-" in str(d)[:10] else "%s-%s-%s" % (str(d)[:4], str(d)[4:6], str(d)[6:8])
-            out.append([d, round(p, 2)])
-        for v in o.values(): _find_hist(v, out)
-    elif isinstance(o, list):
-        for v in o: _find_hist(v, out)
-    return out
 def vkospi():
-    """코스피200 변동성지수(VKOSPI, 한국 공포지수). 출처 후보를 차례로 시도하고, 진단 결과를 probe에 남긴다."""
-    probe, res, hist = {}, None, []
-    def get(tag, url, headers=None, enc="utf-8"):
-        try:
-            req = urllib.request.Request(url, headers=headers or UA)
-            with urllib.request.urlopen(req, timeout=15) as r: t = r.read().decode(enc, "ignore")
-            probe[tag] = "OK " + t[:150].replace("\n", " "); return t
-        except Exception as e:
-            probe[tag] = "ERR " + repr(e)[:110]; return None
-    for i, u in enumerate(("https://api.stock.naver.com/index/VKOSPI/basic", "https://m.stock.naver.com/api/index/VKOSPI/basic")):
-        t = get("nb%d" % i, u)
-        if not t: continue
-        try:
-            j = json.loads(t); p = num(j.get("closePrice")); pct = num(j.get("fluctuationsRatio")); chg = num(j.get("compareToPreviousClosePrice"))
-            fall = str((j.get("compareToPreviousPrice") or {}).get("name", "")).upper() in ("FALLING", "LOWER_LIMIT")
-            if p and pct is not None:
-                if fall and pct > 0: pct = -pct
-                if fall and chg is not None and chg > 0: chg = -chg
-                res = {"src": "naver", "price": p, "pct": round(pct, 2), "chg": chg, "t": j.get("localTradedAt")}; break
-        except Exception as e: probe["nb%d_parse" % i] = repr(e)[:100]
-    if res:
-        for i, u in enumerate(("https://api.stock.naver.com/chart/domestic/index/VKOSPI?periodType=dayCandle&range=3m",
-                               "https://api.stock.naver.com/chart/domestic/index/VKOSPI/day?periodType=dayCandle&startDateTime=20260401&endDateTime=20261231")):
-            t = get("nc%d" % i, u)
-            if not t: continue
-            try:
-                h = _find_hist(json.loads(t)); dd = {}
-                for d, v in h: dd[d] = v
-                hist = sorted(dd.items())
-                if len(hist) >= 5: break
-            except Exception as e: probe["nc%d_parse" % i] = repr(e)[:100]
-    if not res:
-        try:
-            Q = cnbc_fetch([".KSVKOSPI", "VKOSPI", ".VKOSPI", ".KS200VOL"])
-            probe["cnbc"] = str(list(Q.keys()))[:120]
-            for s in Q:
-                p = num(Q[s].get("last")); pct = num(Q[s].get("change_pct"))
-                if p and pct is not None: res = {"src": "cnbc", "price": p, "pct": pct, "chg": num(Q[s].get("change")), "t": Q[s].get("last_time")}; break
-        except Exception as e: probe["cnbc"] = "ERR " + repr(e)[:100]
-    if not res:
-        t = get("nf", "https://finance.naver.com/sise/sise_index_day.naver?code=VKOSPI&page=1", dict(UA, Referer="https://finance.naver.com/"), "euc-kr")
-        if t:
-            import re
-            rows = re.findall(r'<td class="date">\s*(\d{4})\.(\d\d)\.(\d\d)\s*</td>\s*<td class="number_1">\s*([\d,.]+)\s*</td>\s*<td class="number_1">\s*(?:<[^>]*>)*\s*([\d,.]+)', t)
-            if rows:
-                hist = [["%s-%s-%s" % (a, b, c), num(d)] for a, b, c, d, _ in reversed(rows)]
-                p = hist[-1][1]; pv = hist[-2][1] if len(hist) > 1 else None
-                res = {"src": "naver-html", "price": p, "pct": round((p / pv - 1) * 100, 2) if pv else None, "chg": round(p - pv, 2) if pv else None, "t": hist[-1][0]}
-    if res: res["hist"] = [list(x) for x in hist[-130:]]
-    print("VKOSPI:", (res or {}).get("src"), (res or {}).get("price"), "hist", len(hist), probe)
-    return dict(res or {}, probe=probe)
+    """코스피200 변동성지수(VKOSPI, 한국 공포지수) — CNBC .KSVKOSPI (2026-10-15 확인). 현재가+일봉 이력."""
+    SYM = ".KSVKOSPI"; res = {}
+    try:
+        r = cnbc_fetch([SYM]).get(SYM)
+        p = num((r or {}).get("last")); pct = num((r or {}).get("change_pct"))
+        if p is None or pct is None: print("VKOSPI 시세 없음"); return None
+        res = {"src": "cnbc", "sym": SYM, "price": p, "pct": pct, "chg": num(r.get("change")), "prev": num(r.get("previous_day_closing")), "t": r.get("last_time"), "hist": []}
+    except Exception as e:
+        print("VKOSPI 실패:", repr(e)[:120]); return None
+    try:
+        now = datetime.datetime.now(datetime.timezone.utc)
+        s = (now - datetime.timedelta(days=200)).strftime("%Y%m%d") + "000000"; e = (now + datetime.timedelta(days=2)).strftime("%Y%m%d") + "000000"
+        db = _bars(json.loads(raw("https://ts-api.cnbc.com/harmony/app/bars/%s/1D/%s/%s/adjusted/EXTENDED.json" % (urllib.request.quote(SYM, safe="@.="), s, e), CH, tries=2)))
+        res["hist"] = [["%s-%s-%s" % (b["tradeTime"][:4], b["tradeTime"][4:6], b["tradeTime"][6:8]), round(float(b["close"]), 2)] for b in db][-130:]
+    except Exception as e:
+        res["hist_err"] = repr(e)[:120]
+    print("VKOSPI:", res["price"], res["pct"], "hist", len(res["hist"]), res.get("hist_err", ""))
+    return res
 def main():
     try: Q = cnbc()
     except Exception as e: print("CNBC 실패:", repr(e)[:150]); Q = {}
