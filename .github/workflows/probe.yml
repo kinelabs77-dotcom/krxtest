@@ -27,17 +27,15 @@ jobs:
               h = re.sub(r"<[^>]+>", " ", h)
               return re.sub(r"\s+", " ", h)
           for key, url, enc in [
-              ("sise_index", "https://finance.naver.com/sise/sise_index.naver?code=KOSPI", "euc-kr"),
-              ("sise_main", "https://finance.naver.com/sise/", "euc-kr"),
-              ("deal_day", "https://finance.naver.com/sise/investorDealTrendDay.naver?bizdate=20261014&sosok=01", "euc-kr"),
-              ("deal_time", "https://finance.naver.com/sise/investorDealTrendTime.naver?bizdate=20261014&sosok=01&page=1", "euc-kr"),
-              ("m_integ", "https://m.stock.naver.com/api/index/KOSPI/integration", "utf-8"),
-              ("m_trend", "https://m.stock.naver.com/api/index/KOSPI/trend", "utf-8"),
+              ("kq_trend", "https://m.stock.naver.com/api/index/KOSDAQ/trend", "utf-8"),
+              ("kq_integ", "https://m.stock.naver.com/api/index/KOSDAQ/integration", "utf-8"),
+              ("kp_trend", "https://m.stock.naver.com/api/index/KOSPI/trend", "utf-8"),
+              ("kq_page", "https://finance.naver.com/sise/sise_index.naver?code=KOSDAQ", "utf-8"),
           ]:
               st, h = get(url, enc)
-              t = txt(h) if key not in ("m_integ", "m_trend") else h
-              i = t.find("개인") if "개인" in t else t.find("personal")
-              out[key] = {"status": st, "len": len(h), "head": t[:600], "near": t[max(0, i - 300):i + 900] if i >= 0 else ""}
+              t = txt(h) if key.endswith("page") else h
+              i = t.find("dealTrendInfo") if "dealTrendInfo" in t else (t.find("개인") if "개인" in t else t.find("personalValue"))
+              out[key] = {"status": st, "len": len(h), "head": t[:300], "near": t[max(0, i - 300):i + 900] if i >= 0 else ""}
           json.dump(out, open("data/probe_flow.json", "w"), ensure_ascii=False, indent=1)
           PY
       - name: commit
