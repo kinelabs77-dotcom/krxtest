@@ -189,6 +189,32 @@ def vkospi():
         res["hist_err"] = repr(e)[:120]
     print("VKOSPI:", res["price"], res["pct"], "hist", len(res["hist"]), res.get("hist_err", ""))
     return res
+def flows(kst):
+    """코스피·코스닥 투자자별 순매수(억원) — 네이버 m.stock.naver.com/api/index/<코드>/trend (2026-10-15 확인, 장중엔 잠정치). 날짜별 이력은 이전 global.json 에서 이어받는다."""
+    today = kst.strftime("%Y%m%d"); res = {}; bd = None
+    for key, code in (("kospi", "KOSPI"), ("kosdaq", "KOSDAQ")):
+        try:
+            j = json.loads(raw("https://m.stock.naver.com/api/index/%s/trend" % code, tries=2))
+            p, f, i = num(j.get("personalValue")), num(j.get("foreignValue")), num(j.get("institutionalValue"))
+            if p is None or f is None or i is None or not j.get("bizdate"): print("수급 값 없음", code, str(j)[:120]); continue
+            bd = str(j["bizdate"]); res[key] = {"p": p, "f": f, "i": i}
+        except Exception as e:
+            print("수급 실패", code, repr(e)[:120])
+    if not res or not bd: return None
+    final = bd < today or kst.strftime("%H%M") >= "1530"
+    date = "%s-%s-%s" % (bd[:4], bd[4:6], bd[6:8])
+    hist = {}
+    try:
+        with open("data/global.json", encoding="utf-8") as fh: hist = ((json.load(fh).get("flows") or {}).get("hist")) or {}
+    except Exception: hist = {}
+    old = hist.get(date)
+    if not (old and old.get("final") and not final):
+        row = dict(res); row["final"] = final; hist[date] = row
+    for d in sorted(hist)[:-30]: hist.pop(d, None)
+    out = {"src": "naver", "t": kst.isoformat(timespec="minutes"), "date": date, "final": final, "hist": hist}
+    out.update(res)
+    print("수급:", date, "확정" if final else "장중", json.dumps(res))
+    return out
 def main():
     try: Q = cnbc()
     except Exception as e: print("CNBC 실패:", repr(e)[:150]); Q = {}
@@ -213,7 +239,7 @@ def main():
     print("받은 지표 %d/%d" % (len(out), len(ITEMS)))
     if len(out) < len(ITEMS) // 2: sys.exit("절반 미만 — 파일을 갱신하지 않습니다")
     kst = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
-    res = {"asof": kst.isoformat(timespec="minutes"), "count": len(out), "items": out, "fng": fng(), "themes": themes(), "charts": charts(Q), "vkospi": vkospi()}
+    res = {"asof": kst.isoformat(timespec="minutes"), "count": len(out), "items": out, "fng": fng(), "themes": themes(), "charts": charts(Q), "vkospi": vkospi(), "flows": flows(kst)}
     os.makedirs("data", exist_ok=True)
     with open("data/global.json", "w", encoding="utf-8") as f: json.dump(res, f, ensure_ascii=False, indent=1)
 if __name__ == "__main__": main()
