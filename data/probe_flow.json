@@ -1,39 +1,27 @@
 {
- "at": "2026-10-15T02:46:14.586170",
- "sise_index": {
+ "at": "2026-10-15T02:54:31.468999",
+ "kq_trend": {
   "status": 200,
-  "len": 132556,
-  "head": " Npay 利�沅� ��ㅼ�대�� Pay 利�沅� 醫�紐⑸��쨌吏����紐� ������ (��⑥����� Alt ������ Cmd + K) 寃���� 醫�紐⑸��쨌吏����紐� ������ 湲���� 湲���� ��ъ�명�� ��ъ�명�� 寃곗�� 寃곗�� 利�沅� 利�沅� 遺������� 遺������� ��� 援���� 誘멸뎅 쨌 湲�濡�踰� 媛���������� �����μ����� ���濡� ��댁�� 由ъ��移� MY ��ㅼ�대�� ���濡���� 利�沅� ������ 援���� / 援���� 吏����쨌���臾� 0 0 ( 0.00% ) �����몄��蹂� �����ш�� 0 52二� 理���� - 52二� 理�怨� - ��ъ�����蹂� 李⑦�맞룹����� ���濡� 李⑦�맞룹����� 愿�怨� ������ ���媛�蹂� ��쇰�� KOSPI 醫�紐⑹�� ������ ���蹂� �����대��. 泥닿껐���媛� 泥닿껐媛� �����쇰��鍮� 嫄곕����� 蹂������� 嫄곕�����湲� ��ㅽ����댁�ㅻ�� ������ �����고�ㅻ�� ��ㅽ�щ· ��쇱�����吏�/��ъ��, ESC��ㅻ�� ��쇱�����吏� ��ъ�대�� ��⑤",
-  "near": ""
+  "len": 93,
+  "head": "{\"bizdate\":\"20261015\",\"personalValue\":\"-1\",\"foreignValue\":\"+167\",\"institutionalValue\":\"-212\"}",
+  "near": "{\"bizdate\":\"20261015\",\"personalValue\":\"-1\",\"foreignValue\":\"+167\",\"institutionalValue\":\"-212\"}"
  },
- "sise_main": {
+ "kq_integ": {
   "status": 200,
-  "len": 133683,
-  "head": " Npay 利�沅� ��ㅼ�대�� Pay 利�沅� 醫�紐⑸��쨌吏����紐� ������ (��⑥����� Alt ������ Cmd + K) 寃���� 醫�紐⑸��쨌吏����紐� ������ 湲���� 湲���� ��ъ�명�� ��ъ�명�� 寃곗�� 寃곗�� 利�沅� 利�沅� 遺������� 遺������� ��� 援���� 誘멸뎅 쨌 湲�濡�踰� 媛���������� �����μ����� ���濡� ��댁�� 由ъ��移� MY ��ㅼ�대�� ���濡���� 利�沅� ������ 援���� 利���� ��� ��ㅼ��媛� ������ ETF 諛곕�� ��멸뎅��� 蹂댁�� ���洹������� 怨듬え二� 肄���μ�� 愿�由� 쨌 嫄곕�����吏� 쨌 寃쎈낫 ���醫� 쨌 ���留� ��ъ�����蹂� 留ㅻℓ������ 利�������湲������� 援���� 利���� ��� KRX NXT 愿�怨� 二쇱�� ETF ������ ���踰� ���湲�, 珥� 2��④�� 以� 1踰�吏� KRX ���泥� 肄���ㅽ�� 肄���ㅻ�� ���媛�珥���� 嫄곕�����湲� ������ ��멸린 醫�紐� ������ ������ 嫄곕����� ������ 嫄곕��",
-  "near": ""
+  "len": 16230,
+  "head": "{\"stockEndType\":\"index\",\"itemCode\":\"KOSDAQ\",\"reutersCode\":\"KOSDAQ\",\"stockName\":\"코스닥\",\"totalInfos\":[{\"code\":\"lastClosePrice\",\"key\":\"전일\",\"value\":\"823.88\"},{\"code\":\"openPrice\",\"key\":\"시가\",\"value\":\"784.45\",\"compareToPreviousPrice\":{\"code\":\"5\",\"text\":\"하락\",\"name\":\"FALLING\"}},{\"code\":\"highPrice\",\"key\":\"고가\",",
+  "near": "\":\"거래량\",\"value\":\"293,554천주\"},{\"code\":\"accumulatedTradingValue\",\"key\":\"대금\",\"value\":\"3,805,939백만\"},{\"code\":\"highPriceOf52Weeks\",\"key\":\"52주 최고\",\"value\":\"1,229.42\"},{\"code\":\"lowPriceOf52Weeks\",\"key\":\"52주 최저\",\"value\":\"630.99\"}],\"description\":\"코스닥시장의 변화를 종합적으로 나타내기 위하여 산출하는 시황지수로 코스닥에 상장된 보통주를 구성종목으로 함\",\"dealTrendInfo\":{\"bizdate\":\"20261015\",\"personalValue\":\"-1\",\"foreignValue\":\"+167\",\"institutionalValue\":\"-212\"},\"programTrendInfo\":{\"bizdate\":\"20261015\",\"indexDifferenceReal\":\"+75\",\"indexBiDifferenceReal\":\"+399\",\"indexTotalReal\":\"+475\"},\"upDownStockInfo\":{\"upperCount\":\"4\",\"riseCount\":\"80\",\"lowerCount\":\"0\",\"fallCount\":\"1,630\",\"steadyCount\":\"24\"},\"enrollStocks\":[{\"stockType\":\"domestic\",\"stockEndType\":\"stock\",\"itemCode\":\"196170\",\"reutersCode\":\"196170\",\"stockName\":\"알테오젠\",\"sosok\":\"1\",\"closePrice\":\"213,000\",\"compareToPreviousClosePrice\":\"-11,500\",\"compareToPreviousPrice\":{\"code\":\"5\",\"text\":\"하락\",\"name\":\"FALLING\"},\"fluctuationsRatio\":\"-5.12\",\"accumulatedTradingVolume\":\"341,029\",\"accumulatedTradingValue\":\"72,891\",\"localTradedAt\":\"2026-10-15T11:54:18+09:00\",\"marketValue\":\"148,365\",\"nav\":\"N/A\",\"threeMonthEarningRate\":\"N/A\",\"marketStatus\":\"OPEN\",\"tradeStopType\":{\"code\":\"1\",\"text\":\"운영.Trading\",\"name\":\"T"
  },
- "deal_day": {
-  "status": "HTTP Error 410: 410",
-  "len": 0,
-  "head": "",
-  "near": ""
- },
- "deal_time": {
-  "status": "HTTP Error 410: 410",
-  "len": 0,
-  "head": "",
-  "near": ""
- },
- "m_integ": {
-  "status": 200,
-  "len": 16334,
-  "head": "{\"stockEndType\":\"index\",\"itemCode\":\"KOSPI\",\"reutersCode\":\"KOSPI\",\"stockName\":\"코스피\",\"totalInfos\":[{\"code\":\"lastClosePrice\",\"key\":\"전일\",\"value\":\"6,008.81\"},{\"code\":\"openPrice\",\"key\":\"시가\",\"value\":\"5,673.01\",\"compareToPreviousPrice\":{\"code\":\"5\",\"text\":\"하락\",\"name\":\"FALLING\"}},{\"code\":\"highPrice\",\"key\":\"고가\",\"value\":\"5,751.45\",\"compareToPreviousPrice\":{\"code\":\"5\",\"text\":\"하락\",\"name\":\"FALLING\"}},{\"code\":\"lowPrice\",\"key\":\"저가\",\"value\":\"5,533.77\",\"compareToPreviousPrice\":{\"code\":\"5\",\"text\":\"하락\",\"name\":\"FALLING\"}},{\"code\":\"accumulatedTradingVolume\",\"key\":\"거래량\",\"value\":\"212,974천주\"},{\"code\":\"accumulatedTradin",
-  "near": "ue\",\"key\":\"대금\",\"value\":\"13,676,649백만\"},{\"code\":\"highPriceOf52Weeks\",\"key\":\"52주 최고\",\"value\":\"9,385.59\"},{\"code\":\"lowPriceOf52Weeks\",\"key\":\"52주 최저\",\"value\":\"3,675.82\"}],\"description\":\"유가증권시장에 상장된 보통주를 구성종목으로하여 산출하는 지수로서 유가증권시장에서 형성되는 주가변동을 종합적으로 보여주는 국내 주요경제지표임\",\"dealTrendInfo\":{\"bizdate\":\"20261015\",\"personalValue\":\"+10,160\",\"foreignValue\":\"-26,094\",\"institutionalValue\":\"+12,786\"},\"programTrendInfo\":{\"bizdate\":\"20261015\",\"indexDifferenceReal\":\"+4,812\",\"indexBiDifferenceReal\":\"-2,433\",\"indexTotalReal\":\"+2,380\"},\"upDownStockInfo\":{\"upperCount\":\"2\",\"riseCount\":\"61\",\"lowerCount\":\"0\",\"fallCount\":\"848\",\"steadyCount\":\"7\"},\"enrollStocks\":[{\"stockType\":\"domestic\",\"stockEndType\":\"stock\",\"itemCode\":\"005930\",\"reutersCode\":\"005930\",\"stockName\":\"삼성전자\",\"sosok\":\"0\",\"closePrice\":\"210,000\",\"compareToPreviousClosePrice\":\"-22,000\",\"compareToPreviousPrice\":{\"code\":\"5\",\"text\":\"하락\",\"name\":\"FALLING\"},\"fluctuationsRatio\":\"-9.48\",\"accumulatedTradingVolume\":\"29,494,114\",\"accumulatedTradingValue\":\"6,325,615\",\"localTradedAt\":\"2026-10-15T11:46:17+09:00\",\"marketValue\":\"12,277,185\",\"nav\":\"N/A\",\"threeMonthEarningRate\":\"N/A\",\"marketStatus\":\"OPEN\",\"tradeStopType\":{\"code\":\"1\",\"text\":\"운영.Trading\",\"name\":\"TRADING\"},\"trad"
- },
- "m_trend": {
+ "kp_trend": {
   "status": 200,
   "len": 104,
-  "head": "{\"bizdate\":\"20261015\",\"personalValue\":\"+10,160\",\"foreignValue\":\"-26,094\",\"institutionalValue\":\"+12,786\"}",
-  "near": "{\"bizdate\":\"20261015\",\"personalValue\":\"+10,160\",\"foreignValue\":\"-26,094\",\"institutionalValue\":\"+12,786\"}"
+  "head": "{\"bizdate\":\"20261015\",\"personalValue\":\"+10,337\",\"foreignValue\":\"-26,455\",\"institutionalValue\":\"+12,822\"}",
+  "near": "{\"bizdate\":\"20261015\",\"personalValue\":\"+10,337\",\"foreignValue\":\"-26,455\",\"institutionalValue\":\"+12,822\"}"
+ },
+ "kq_page": {
+  "status": 200,
+  "len": 131569,
+  "head": " Npay 증권 네이버 Pay 증권 종목명·지수명 입력 (단축키 Alt 또는 Cmd + K) 검색 종목명·지수명 입력 금융 금융 포인트 포인트 결제 결제 증권 증권 부동산 부동산 홈 국내 미국 · 글로벌 가상자산 시장지표 토론 뉴스 리서치 MY 네이버 새로운 증권 안내 국내 / 국내 지수·선물 0 0 ( 0.00% ) 시세정보 현재가 0 52주 최저 - 52주 최고 - 투자정보 차트·시세 토론 차트·시세 광고 시세 시간별 일별 KOSDAQ 종목의 시세 정보 테이블. 체결시각 체결가 전일대비 거래량 변동량 거래대금 스페이스바 또는 엔",
+  "near": ""
  }
 }
