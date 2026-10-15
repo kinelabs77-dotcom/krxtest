@@ -182,9 +182,9 @@ def vkospi():
         print("VKOSPI 실패:", repr(e)[:120]); return None
     try:
         now = datetime.datetime.now(datetime.timezone.utc)
-        s = (now - datetime.timedelta(days=200)).strftime("%Y%m%d") + "000000"; e = (now + datetime.timedelta(days=2)).strftime("%Y%m%d") + "000000"
+        s = (now - datetime.timedelta(days=380)).strftime("%Y%m%d") + "000000"; e = (now + datetime.timedelta(days=2)).strftime("%Y%m%d") + "000000"
         db = _bars(json.loads(raw("https://ts-api.cnbc.com/harmony/app/bars/%s/1D/%s/%s/adjusted/EXTENDED.json" % (urllib.request.quote(SYM, safe="@.="), s, e), CH, tries=2)))
-        res["hist"] = [["%s-%s-%s" % (b["tradeTime"][:4], b["tradeTime"][4:6], b["tradeTime"][6:8]), round(float(b["close"]), 2)] for b in db][-130:]
+        res["hist"] = [["%s-%s-%s" % (b["tradeTime"][:4], b["tradeTime"][4:6], b["tradeTime"][6:8]), round(float(b["close"]), 2)] for b in db][-260:]
     except Exception as e:
         res["hist_err"] = repr(e)[:120]
     print("VKOSPI:", res["price"], res["pct"], "hist", len(res["hist"]), res.get("hist_err", ""))
