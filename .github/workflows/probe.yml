@@ -1,0 +1,48 @@
+name: probe-flow
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: probe
+        run: |
+          python3 - <<'PY'
+          import json, re, urllib.request, datetime
+          H = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36", "Accept-Language": "ko-KR,ko;q=0.9", "Referer": "https://finance.naver.com/"}
+          out = {"at": datetime.datetime.utcnow().isoformat()}
+          def get(url, enc):
+              try:
+                  r = urllib.request.urlopen(urllib.request.Request(url, headers=H), timeout=20)
+                  b = r.read()
+                  return r.status, b.decode(enc, "replace")
+              except Exception as e:
+                  return str(e)[:200], ""
+          def txt(h):
+              h = re.sub(r"<script.*?</script>|<style.*?</style>", " ", h, flags=re.S)
+              h = re.sub(r"<[^>]+>", " ", h)
+              return re.sub(r"\s+", " ", h)
+          for key, url, enc in [
+              ("sise_index", "https://finance.naver.com/sise/sise_index.naver?code=KOSPI", "euc-kr"),
+              ("sise_main", "https://finance.naver.com/sise/", "euc-kr"),
+              ("deal_day", "https://finance.naver.com/sise/investorDealTrendDay.naver?bizdate=20261014&sosok=01", "euc-kr"),
+              ("deal_time", "https://finance.naver.com/sise/investorDealTrendTime.naver?bizdate=20261014&sosok=01&page=1", "euc-kr"),
+              ("m_integ", "https://m.stock.naver.com/api/index/KOSPI/integration", "utf-8"),
+              ("m_trend", "https://m.stock.naver.com/api/index/KOSPI/trend", "utf-8"),
+          ]:
+              st, h = get(url, enc)
+              t = txt(h) if key not in ("m_integ", "m_trend") else h
+              i = t.find("개인") if "개인" in t else t.find("personal")
+              out[key] = {"status": st, "len": len(h), "head": t[:600], "near": t[max(0, i - 300):i + 900] if i >= 0 else ""}
+          json.dump(out, open("data/probe_flow.json", "w"), ensure_ascii=False, indent=1)
+          PY
+      - name: commit
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/probe_flow.json
+          git commit -m "probe flow" && git pull --rebase origin main && git push
