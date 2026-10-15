@@ -1,0 +1,39 @@
+{
+ "at": "2026-10-15T02:46:14.586170",
+ "sise_index": {
+  "status": 200,
+  "len": 132556,
+  "head": " Npay 利�沅� ��ㅼ�대�� Pay 利�沅� 醫�紐⑸��쨌吏����紐� ������ (��⑥����� Alt ������ Cmd + K) 寃���� 醫�紐⑸��쨌吏����紐� ������ 湲���� 湲���� ��ъ�명�� ��ъ�명�� 寃곗�� 寃곗�� 利�沅� 利�沅� 遺������� 遺������� ��� 援���� 誘멸뎅 쨌 湲�濡�踰� 媛���������� �����μ����� ���濡� ��댁�� 由ъ��移� MY ��ㅼ�대�� ���濡���� 利�沅� ������ 援���� / 援���� 吏����쨌���臾� 0 0 ( 0.00% ) �����몄��蹂� �����ш�� 0 52二� 理���� - 52二� 理�怨� - ��ъ�����蹂� 李⑦�맞룹����� ���濡� 李⑦�맞룹����� 愿�怨� ������ ���媛�蹂� ��쇰�� KOSPI 醫�紐⑹�� ������ ���蹂� �����대��. 泥닿껐���媛� 泥닿껐媛� �����쇰��鍮� 嫄곕����� 蹂������� 嫄곕�����湲� ��ㅽ����댁�ㅻ�� ������ �����고�ㅻ�� ��ㅽ�щ· ��쇱�����吏�/��ъ��, ESC��ㅻ�� ��쇱�����吏� ��ъ�대�� ��⑤",
+  "near": ""
+ },
+ "sise_main": {
+  "status": 200,
+  "len": 133683,
+  "head": " Npay 利�沅� ��ㅼ�대�� Pay 利�沅� 醫�紐⑸��쨌吏����紐� ������ (��⑥����� Alt ������ Cmd + K) 寃���� 醫�紐⑸��쨌吏����紐� ������ 湲���� 湲���� ��ъ�명�� ��ъ�명�� 寃곗�� 寃곗�� 利�沅� 利�沅� 遺������� 遺������� ��� 援���� 誘멸뎅 쨌 湲�濡�踰� 媛���������� �����μ����� ���濡� ��댁�� 由ъ��移� MY ��ㅼ�대�� ���濡���� 利�沅� ������ 援���� 利���� ��� ��ㅼ��媛� ������ ETF 諛곕�� ��멸뎅��� 蹂댁�� ���洹������� 怨듬え二� 肄���μ�� 愿�由� 쨌 嫄곕�����吏� 쨌 寃쎈낫 ���醫� 쨌 ���留� ��ъ�����蹂� 留ㅻℓ������ 利�������湲������� 援���� 利���� ��� KRX NXT 愿�怨� 二쇱�� ETF ������ ���踰� ���湲�, 珥� 2��④�� 以� 1踰�吏� KRX ���泥� 肄���ㅽ�� 肄���ㅻ�� ���媛�珥���� 嫄곕�����湲� ������ ��멸린 醫�紐� ������ ������ 嫄곕����� ������ 嫄곕��",
+  "near": ""
+ },
+ "deal_day": {
+  "status": "HTTP Error 410: 410",
+  "len": 0,
+  "head": "",
+  "near": ""
+ },
+ "deal_time": {
+  "status": "HTTP Error 410: 410",
+  "len": 0,
+  "head": "",
+  "near": ""
+ },
+ "m_integ": {
+  "status": 200,
+  "len": 16334,
+  "head": "{\"stockEndType\":\"index\",\"itemCode\":\"KOSPI\",\"reutersCode\":\"KOSPI\",\"stockName\":\"코스피\",\"totalInfos\":[{\"code\":\"lastClosePrice\",\"key\":\"전일\",\"value\":\"6,008.81\"},{\"code\":\"openPrice\",\"key\":\"시가\",\"value\":\"5,673.01\",\"compareToPreviousPrice\":{\"code\":\"5\",\"text\":\"하락\",\"name\":\"FALLING\"}},{\"code\":\"highPrice\",\"key\":\"고가\",\"value\":\"5,751.45\",\"compareToPreviousPrice\":{\"code\":\"5\",\"text\":\"하락\",\"name\":\"FALLING\"}},{\"code\":\"lowPrice\",\"key\":\"저가\",\"value\":\"5,533.77\",\"compareToPreviousPrice\":{\"code\":\"5\",\"text\":\"하락\",\"name\":\"FALLING\"}},{\"code\":\"accumulatedTradingVolume\",\"key\":\"거래량\",\"value\":\"212,974천주\"},{\"code\":\"accumulatedTradin",
+  "near": "ue\",\"key\":\"대금\",\"value\":\"13,676,649백만\"},{\"code\":\"highPriceOf52Weeks\",\"key\":\"52주 최고\",\"value\":\"9,385.59\"},{\"code\":\"lowPriceOf52Weeks\",\"key\":\"52주 최저\",\"value\":\"3,675.82\"}],\"description\":\"유가증권시장에 상장된 보통주를 구성종목으로하여 산출하는 지수로서 유가증권시장에서 형성되는 주가변동을 종합적으로 보여주는 국내 주요경제지표임\",\"dealTrendInfo\":{\"bizdate\":\"20261015\",\"personalValue\":\"+10,160\",\"foreignValue\":\"-26,094\",\"institutionalValue\":\"+12,786\"},\"programTrendInfo\":{\"bizdate\":\"20261015\",\"indexDifferenceReal\":\"+4,812\",\"indexBiDifferenceReal\":\"-2,433\",\"indexTotalReal\":\"+2,380\"},\"upDownStockInfo\":{\"upperCount\":\"2\",\"riseCount\":\"61\",\"lowerCount\":\"0\",\"fallCount\":\"848\",\"steadyCount\":\"7\"},\"enrollStocks\":[{\"stockType\":\"domestic\",\"stockEndType\":\"stock\",\"itemCode\":\"005930\",\"reutersCode\":\"005930\",\"stockName\":\"삼성전자\",\"sosok\":\"0\",\"closePrice\":\"210,000\",\"compareToPreviousClosePrice\":\"-22,000\",\"compareToPreviousPrice\":{\"code\":\"5\",\"text\":\"하락\",\"name\":\"FALLING\"},\"fluctuationsRatio\":\"-9.48\",\"accumulatedTradingVolume\":\"29,494,114\",\"accumulatedTradingValue\":\"6,325,615\",\"localTradedAt\":\"2026-10-15T11:46:17+09:00\",\"marketValue\":\"12,277,185\",\"nav\":\"N/A\",\"threeMonthEarningRate\":\"N/A\",\"marketStatus\":\"OPEN\",\"tradeStopType\":{\"code\":\"1\",\"text\":\"운영.Trading\",\"name\":\"TRADING\"},\"trad"
+ },
+ "m_trend": {
+  "status": 200,
+  "len": 104,
+  "head": "{\"bizdate\":\"20261015\",\"personalValue\":\"+10,160\",\"foreignValue\":\"-26,094\",\"institutionalValue\":\"+12,786\"}",
+  "near": "{\"bizdate\":\"20261015\",\"personalValue\":\"+10,160\",\"foreignValue\":\"-26,094\",\"institutionalValue\":\"+12,786\"}"
+ }
+}
