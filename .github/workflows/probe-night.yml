@@ -1,0 +1,44 @@
+name: probe-night
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: probe night futures
+        env:
+          KRX_ID: ${{ secrets.KRX_ID }}
+          KRX_PW: ${{ secrets.KRX_PW }}
+        run: |
+          python - <<'PY'
+          import sys, urllib.parse, urllib.request, time
+          sys.path.insert(0, '.')
+          import collect_krx as K
+          print('login', K.login())
+          def raw(d):
+              body = urllib.parse.urlencode(d).encode()
+              req = urllib.request.Request(K.KRX_JSON_URL, data=body, headers=K.KRX_HEADERS, method='POST')
+              try:
+                  with K._opener.open(req, timeout=40) as r:
+                      return r.read().decode('utf-8', 'replace')
+              except Exception as e:
+                  return 'ERR ' + type(e).__name__ + ' ' + str(e)[:80]
+          blds = []
+          for k in list(range(150, 158)) + [125, 126, 127]:
+              for s in (1, 2, 3, 4):
+                  blds.append('MDCSTAT%d%02d' % (k, s))
+          for b in blds:
+              for tag, extra in (('A', {}), ('B', {'prodId': 'KRDRVFUK2I'}), ('C', {'prodId': 'KRDRVFUK2I', 'mktTpCd': 'N'})):
+                  d = {'bld': 'dbms/MDC/STAT/standard/' + b, 'locale': 'ko_KR', 'strtDd': '20261008', 'endDd': '20261015', 'trdDd': '20261015', 'share': '1', 'money': '1', 'csvxls_isNo': 'false'}
+                  d.update(extra)
+                  out = raw(d)
+                  print(b, tag, len(out), out[:260].replace('\n', ' '))
+                  time.sleep(0.25)
+          PY
