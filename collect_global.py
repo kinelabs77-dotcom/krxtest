@@ -274,14 +274,6 @@ def main():
     res = {"asof": kst.isoformat(timespec="minutes"), "count": len(out), "items": out, "fng": fng(), "themes": themes(), "charts": CHs, "vkospi": vkospi(), "flows": flows(kst)}
     os.makedirs("data", exist_ok=True)
     with open("data/global.json", "w", encoding="utf-8") as f: json.dump(res, f, ensure_ascii=False, indent=1)
-def probe_night():
-    """코스피200 야간선물 응답 구조 확인(진단용, 실패해도 무시)"""
-    for u in ("https://m.stock.naver.com/api/index/FUT/basic", "https://m.stock.naver.com/api/index/FUT/integration", "https://m.stock.naver.com/api/index/FUT/price?pageSize=3&page=1"):
-        try:
-            with urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=15) as r: print("야간진단2 OK", u, r.read(2600).decode("utf-8", "ignore").replace("\n", " "))
-        except Exception as e: print("야간진단2 실패", u, repr(e)[:60])
 
-try: probe_night()
-except Exception as e: print("야간진단 오류", repr(e)[:100])
 if __name__ == "__main__": main()
 
