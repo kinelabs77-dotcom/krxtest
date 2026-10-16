@@ -275,18 +275,11 @@ def main():
     os.makedirs("data", exist_ok=True)
     with open("data/global.json", "w", encoding="utf-8") as f: json.dump(res, f, ensure_ascii=False, indent=1)
 def probe_night():
-    """코스피200 야간선물 데이터 출처 탐색(진단용, 실패해도 무시)"""
-    for base in ("https://api.stock.naver.com/index/%s/basic", "https://m.stock.naver.com/api/index/%s/basic"):
-        for code in ("FUT", "KPI200", "KOSPI200F", "NFUT", "NIGHT", "K200F", "KS200F"):
-            u = base % code
-            try:
-                with urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=15) as r: print("야간진단 OK", u, r.read(260).decode("utf-8", "ignore").replace("\n", " "))
-            except Exception as e: print("야간진단 실패", u, repr(e)[:60])
-    try:
-        q = cnbc_fetch([".KS200", "KS200", "@KS.1", "KS200F", "KOSPI200F", ".KSVKOSPI", "@K2.1", "KM.1"])
-        for k, v in q.items(): print("야간진단 CNBC", k, v.get("name"), v.get("last"), v.get("change_pct"), v.get("last_time"))
-        print("야간진단 CNBC 응답 심볼", list(q.keys()))
-    except Exception as e: print("야간진단 CNBC 실패", repr(e)[:100])
+    """코스피200 야간선물 응답 구조 확인(진단용, 실패해도 무시)"""
+    for u in ("https://m.stock.naver.com/api/index/FUT/basic", "https://m.stock.naver.com/api/index/FUT/integration", "https://m.stock.naver.com/api/index/FUT/price?pageSize=3&page=1"):
+        try:
+            with urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=15) as r: print("야간진단2 OK", u, r.read(2600).decode("utf-8", "ignore").replace("\n", " "))
+        except Exception as e: print("야간진단2 실패", u, repr(e)[:60])
 
 try: probe_night()
 except Exception as e: print("야간진단 오류", repr(e)[:100])
