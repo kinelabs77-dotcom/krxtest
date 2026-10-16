@@ -12,10 +12,10 @@ ITEMS = [
  ("vix","VIX","risk",".VIX","pct"), ("tnx","미 10년물 금리","risk","US10Y","bp"), ("dxy","달러인덱스","risk",".DXY","pct"),
  ("krw","원/달러","fx","KRW=","pct"), ("wti","WTI 유가","com","@CL.1","pct"), ("gold","금","com","@GC.1","pct"), ("btc","비트코인(24시간)","com",None,"pct"),
  ("ewy","EWY(한국ETF)","kr","EWY","pct"), ("kospi","코스피","kr",".KS11","pct"), ("kosdaq","코스닥","kr",".KQ11","pct"),
- ("n225","닛케이225","asia",".N225","pct"), ("hsi","항셍","asia",".HSI","pct"), ("sh","상해종합","asia",".SSEC","pct"),
+ ("n225","닛케이225","asia",".N225","pct"), ("hsi","항셍","asia",".HSI","pct"), ("sh","상해종합","asia",".SSEC","pct"), ("twii","대만 가권","asia",".TWII","pct"),
  ("nvda","엔비디아","stk","NVDA","pct"), ("tsm","TSMC(ADR)","stk","TSM","pct"),
 ]
-EXTRA = {"es": ["@SP.1", "@ES.1", "ES.1"], "nq": ["@ND.1", "@NQ.1", "NQ.1"]}  # CNBC 선물 심볼 후보
+EXTRA = {"es": ["@SP.1", "@ES.1", "ES.1"], "nq": ["@ND.1", "@NQ.1", "NQ.1"], "twii": [".TWII", "TWII", ".TWSE"]}  # CNBC 선물 심볼 후보
 def pick(Q, key, sym):
     for s in [sym] + EXTRA.get(key, []):
         if s in Q: return Q[s]
@@ -120,7 +120,7 @@ def probe_charts():
             with urllib.request.urlopen(req, timeout=20) as r: print("차트진단 OK", u[:90], r.read(500))
         except Exception as e:
             print("차트진단 실패", u[:90], repr(e)[:100])
-CHART_KEYS = ["spx","ixic","dji","sox","es","nq","vix","tnx","dxy","krw","wti","gold","kospi","kosdaq","n225","hsi","sh","ewy"]
+CHART_KEYS = ["spx","ixic","dji","sox","es","nq","vix","tnx","dxy","krw","wti","gold","kospi","kosdaq","n225","hsi","sh","ewy","twii"]
 CH = dict(UA, Origin="https://www.cnbc.com", Referer="https://www.cnbc.com/")
 def _bars(j):
     pb = (j.get("barData") or {}).get("priceBars")
@@ -128,7 +128,7 @@ def _bars(j):
     return pb
 from zoneinfo import ZoneInfo
 ET = ZoneInfo("America/New_York")
-TZ = {"spx": ("America/New_York", "뉴욕시간"), "ixic": ("America/New_York", "뉴욕시간"), "dji": ("America/New_York", "뉴욕시간"), "sox": ("America/New_York", "뉴욕시간"), "ewy": ("America/New_York", "뉴욕시간"), "vix": ("America/New_York", "뉴욕시간"), "tnx": ("America/New_York", "뉴욕시간"), "kospi": ("Asia/Seoul", "한국시간"), "kosdaq": ("Asia/Seoul", "한국시간"), "n225": ("Asia/Tokyo", "도쿄시간"), "hsi": ("Asia/Hong_Kong", "홍콩시간"), "sh": ("Asia/Shanghai", "상하이시간")}
+TZ = {"spx": ("America/New_York", "뉴욕시간"), "ixic": ("America/New_York", "뉴욕시간"), "dji": ("America/New_York", "뉴욕시간"), "sox": ("America/New_York", "뉴욕시간"), "ewy": ("America/New_York", "뉴욕시간"), "twii": ("Asia/Taipei", "타이베이시간"), "vix": ("America/New_York", "뉴욕시간"), "tnx": ("America/New_York", "뉴욕시간"), "kospi": ("Asia/Seoul", "한국시간"), "kosdaq": ("Asia/Seoul", "한국시간"), "n225": ("Asia/Tokyo", "도쿄시간"), "hsi": ("Asia/Hong_Kong", "홍콩시간"), "sh": ("Asia/Shanghai", "상하이시간")}
 def charts(Q):
     out = {}
     now = datetime.datetime.now(datetime.timezone.utc)
@@ -154,7 +154,7 @@ def charts(Q):
                 hm = t.strftime("%H%M")
                 if us and not ("0930" <= hm <= "1600"): continue
                 pts.append((t, hm, round(float(b["close"]), 2)))
-            if key in ("kospi", "kosdaq", "n225", "hsi", "sh") and pts:
+            if key in ("kospi", "kosdaq", "n225", "hsi", "sh", "twii") and pts:
                 dl = pts[-1][0].date(); pts = [p for p in pts if p[0].date() == dl]
             inter = [[hm, c] for _, hm, c in pts]
             d0 = pts[0][0].strftime("%Y%m%d")
