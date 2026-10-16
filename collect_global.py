@@ -232,6 +232,36 @@ def flows(kst):
     out.update(res)
     print("수급:", date, "확정" if final else "장중", json.dumps(res))
     return out
+def night_fut(kst):
+    """코스피200 최근월물 선물 야간·주간 시세 — KRX 정보데이터시스템 [15003](MDCSTAT12701, 로그인 필요: KRX_ID/KRX_PW). 실패하면 None(다른 지표엔 영향 없음)."""
+    try:
+        if not (os.environ.get("KRX_ID") and os.environ.get("KRX_PW")): print("야간선물: KRX 시크릿 없음"); return None
+        import collect_krx as K
+        if not K.login(): print("야간선물: KRX 로그인 실패"); return None
+        td = datetime.timedelta
+        rows = K.krx_post({"bld": "dbms/MDC/STAT/standard/MDCSTAT12701", "locale": "ko_KR", "prodId": "KR___FUK2I",
+                           "strtDd": (kst - td(days=10)).strftime("%Y%m%d"), "endDd": kst.strftime("%Y%m%d"),
+                           "aggBasTpCd": "", "share": "1", "money": "3", "csvxls_isNo": "false"})
+        def pack(r):
+            cl = K.num(r.get("TDD_CLSPRC")); chg = K.num(r.get("CMPPREVDD_PRC"))
+            if cl is None or not cl or chg is None: return None
+            if str(r.get("FLUC_TP_CD")) == "2" and chg > 0: chg = -chg
+            lab = str(r.get("TRD_DD", "")); d = lab[:10].replace("/", "-")
+            base = cl - chg
+            return {"d": d, "c": cl, "chg": chg, "pct": round(chg / base * 100, 2) if base else None,
+                    "o": K.num(r.get("TDD_OPNPRC")), "h": K.num(r.get("TDD_HGPRC")), "l": K.num(r.get("TDD_LWPRC")),
+                    "vol": K.num(r.get("ACC_TRDVOL")), "name": str(r.get("ISU_NM", "")).strip()}
+        night = day = None
+        for r in rows:
+            lab = str(r.get("TRD_DD", ""))
+            if night is None and "(야간)" in lab: night = pack(r)
+            if day is None and "(주간)" in lab: day = pack(r)
+        print("야간선물", night, "주간", day)
+        if not night: return None
+        return {"night": night, "day": day, "src": "KRX 정보데이터시스템 [15003] 최근월물 시세 추이(선물)", "fetched": kst.isoformat(timespec="minutes")}
+    except Exception as e:
+        print("야간선물 실패:", type(e).__name__, str(e)[:120]); return None
+
 def main():
     try: Q = cnbc()
     except Exception as e: print("CNBC 실패:", repr(e)[:150]); Q = {}
@@ -271,7 +301,7 @@ def main():
             out[key] = {"name": name, "group": grp, "sym": sym, "price": round(px, 4), "t": tt.strftime("%Y-%m-%dT%H:%M:00.000+0900"), "chg": round((px / prv - 1) * 100, 2), "unit": "%"}
             print("차트로 보충", key, out[key]["price"], out[key]["chg"])
         except Exception as e: print("차트 보충 실패", key, repr(e)[:100])
-    res = {"asof": kst.isoformat(timespec="minutes"), "count": len(out), "items": out, "fng": fng(), "themes": themes(), "charts": CHs, "vkospi": vkospi(), "flows": flows(kst)}
+    res = {"asof": kst.isoformat(timespec="minutes"), "count": len(out), "items": out, "fng": fng(), "themes": themes(), "charts": CHs, "vkospi": vkospi(), "flows": flows(kst), "night": night_fut(kst)}
     os.makedirs("data", exist_ok=True)
     with open("data/global.json", "w", encoding="utf-8") as f: json.dump(res, f, ensure_ascii=False, indent=1)
 
