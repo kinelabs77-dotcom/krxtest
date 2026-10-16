@@ -171,15 +171,25 @@ def charts(Q):
             print("차트 변환 실패", key, repr(e)[:150], str(ib[:1])[:200])
     return out or None
 def vkospi():
-    """코스피200 변동성지수(VKOSPI, 한국 공포지수) — CNBC .KSVKOSPI (2026-10-15 확인). 현재가+일봉 이력."""
-    SYM = ".KSVKOSPI"; res = {}
+    """코스피200 변동성지수(VKOSPI, 한국 공포지수) — CNBC .KSVKOSPI (2026-10-15 확인). 현재가+일봉 이력.
+    2026-10-16: CNBC 가 한국 지수 시세를 장 시작 전(새벽~09:00)에 비워 보내면 띠가 통째로 사라지던 문제 →
+    시세가 없거나 실패하면 직전 global.json 의 값을 stale=True 로 표시해 그대로 이어받는다."""
+    SYM = ".KSVKOSPI"; res = {}; old = None
+    try:
+        with open("data/global.json", encoding="utf-8") as fh: old = json.load(fh).get("vkospi")
+    except Exception: old = None
+    def carry(why):
+        if old and old.get("price") is not None:
+            o = dict(old); o["stale"] = True; o["stale_why"] = why
+            print("VKOSPI 직전값 유지:", o["price"], o.get("t"), why); return o
+        return None
     try:
         r = cnbc_fetch([SYM]).get(SYM)
         p = num((r or {}).get("last")); pct = num((r or {}).get("change_pct"))
-        if p is None or pct is None: print("VKOSPI 시세 없음"); return None
+        if p is None or pct is None: print("VKOSPI 시세 없음"); return carry("no-quote")
         res = {"src": "cnbc", "sym": SYM, "price": p, "pct": pct, "chg": num(r.get("change")), "prev": num(r.get("previous_day_closing")), "t": r.get("last_time"), "hist": []}
     except Exception as e:
-        print("VKOSPI 실패:", repr(e)[:120]); return None
+        print("VKOSPI 실패:", repr(e)[:120]); return carry("error")
     try:
         now = datetime.datetime.now(datetime.timezone.utc)
         s = (now - datetime.timedelta(days=380)).strftime("%Y%m%d") + "000000"; e = (now + datetime.timedelta(days=2)).strftime("%Y%m%d") + "000000"
@@ -187,6 +197,7 @@ def vkospi():
         res["hist"] = [["%s-%s-%s" % (b["tradeTime"][:4], b["tradeTime"][4:6], b["tradeTime"][6:8]), round(float(b["close"]), 2)] for b in db][-260:]
     except Exception as e:
         res["hist_err"] = repr(e)[:120]
+    if not res["hist"] and old and old.get("hist"): res["hist"] = old["hist"]
     print("VKOSPI:", res["price"], res["pct"], "hist", len(res["hist"]), res.get("hist_err", ""))
     return res
 def flows(kst):
