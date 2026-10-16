@@ -1,0 +1,56 @@
+name: probe-night2
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: probe night futures 2
+        env:
+          KRX_ID: ${{ secrets.KRX_ID }}
+          KRX_PW: ${{ secrets.KRX_PW }}
+        run: |
+          python - <<'PY'
+          import sys, urllib.parse, urllib.request, time, json
+          sys.path.insert(0, '.')
+          import collect_krx as K
+          print('login', K.login())
+          def raw(d):
+              body = urllib.parse.urlencode(d).encode()
+              req = urllib.request.Request(K.KRX_JSON_URL, data=body, headers=K.KRX_HEADERS, method='POST')
+              try:
+                  with K._opener.open(req, timeout=40) as r:
+                      return r.read().decode('utf-8', 'replace')
+              except Exception as e:
+                  return 'ERR ' + type(e).__name__ + ' ' + str(e)[:80]
+          def short(o):
+              if not o.lstrip().startswith('{'):
+                  return 'NONJSON'
+              try:
+                  j = json.loads(o)
+              except Exception:
+                  return 'BADJSON'
+              rows = j.get('output') or j.get('OutBlock_1') or []
+              if isinstance(rows, list):
+                  return 'rows=%d %s' % (len(rows), json.dumps(rows[0], ensure_ascii=False)[:230] if rows else '')
+              return 'keys=' + ','.join(list(j.keys())[:8])
+          base = {'locale': 'ko_KR', 'strtDd': '20261008', 'endDd': '20261015', 'trdDd': '20261015', 'share': '1', 'money': '1', 'csvxls_isNo': 'false', 'prodId': 'KRDRVFUK2I'}
+          for b in ('MDCSTAT15001', 'MDCSTAT15002', 'MDCSTAT15003', 'MDCSTAT15004'):
+              d = dict(base); d['bld'] = 'dbms/MDC/STAT/standard/' + b
+              print('BASE', b, short(raw(d)))
+              time.sleep(0.3)
+              for nm in ('mktTpCd', 'trdTpCd', 'mktId', 'mrktTpCd', 'sessnTpCd', 'mktDivCd', 'trdSessn', 'dayNight'):
+                  for val in ('1', '2', '3', 'T', 'N', 'D', 'A', 'ALL'):
+                      d2 = dict(d); d2[nm] = val
+                      s = short(raw(d2))
+                      if s.startswith('rows=') and not s.startswith('rows=0'):
+                          print('HIT', b, nm, val, s)
+                      time.sleep(0.2)
+          PY
