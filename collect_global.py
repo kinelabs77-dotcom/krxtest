@@ -240,7 +240,7 @@ def night_fut(kst):
         if not K.login(): print("야간선물: KRX 로그인 실패"); return None
         td = datetime.timedelta
         rows = K.krx_post({"bld": "dbms/MDC/STAT/standard/MDCSTAT12701", "locale": "ko_KR", "prodId": "KR___FUK2I",
-                           "strtDd": (kst - td(days=10)).strftime("%Y%m%d"), "endDd": kst.strftime("%Y%m%d"),
+                           "strtDd": (kst - td(days=100)).strftime("%Y%m%d"), "endDd": kst.strftime("%Y%m%d"),
                            "aggBasTpCd": "", "share": "1", "money": "3", "csvxls_isNo": "false"})
         def pack(r):
             cl = K.num(r.get("TDD_CLSPRC")); chg = K.num(r.get("CMPPREVDD_PRC"))
@@ -257,7 +257,9 @@ def night_fut(kst):
             if night is None and "(야간)" in lab: night = pack(r)
             if day is None and "(주간)" in lab: day = pack(r)
             x = pack(r)
-            if x and len(hist) < 14: x["s"] = "야간" if "(야간)" in lab else "주간"; hist.append(x)
+            if x and len(hist) < 160:
+                x = {k: x[k] for k in ("d", "c", "chg", "pct", "h", "l", "vol")}
+                x["s"] = "야간" if "(야간)" in lab else "주간"; hist.append(x)
         print("야간선물", night, "주간", day)
         if not night: return None
         return {"night": night, "day": day, "hist": hist, "src": "KRX 정보데이터시스템 [15003] 최근월물 시세 추이(선물)", "fetched": kst.isoformat(timespec="minutes")}
