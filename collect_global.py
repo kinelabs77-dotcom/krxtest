@@ -256,7 +256,22 @@ def main():
     print("받은 지표 %d/%d" % (len(out), len(ITEMS)))
     if len(out) < len(ITEMS) // 2: sys.exit("절반 미만 — 파일을 갱신하지 않습니다")
     kst = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
-    res = {"asof": kst.isoformat(timespec="minutes"), "count": len(out), "items": out, "fng": fng(), "themes": themes(), "charts": charts(Q), "vkospi": vkospi(), "flows": flows(kst)}
+    CHs = charts(Q)
+    # 시세(CNBC)가 비어 있어도 차트 데이터가 있으면 그 값으로 표를 채운다(대만 가권 등)
+    for key, name, grp, sym, kind in ITEMS:
+        c = (CHs or {}).get(key)
+        if key in out or not c or not c.get("d") or len(c["d"]) < 2 or kind != "pct": continue
+        try:
+            dl = c["d"][-1][0]; same = c["ses"].startswith("%d/%d(" % (int(dl[4:6]), int(dl[6:8])))
+            prv = c["d"][-2][4] if same else c["d"][-1][4]
+            px = c["i"][-1][1] if c.get("i") else c["d"][-1][4]
+            hm = c["i"][-1][0] if c.get("i") else "1500"
+            tzn = TZ.get(key, ("Asia/Seoul", ""))[0]
+            tt = datetime.datetime.strptime(dl + hm, "%Y%m%d%H%M").replace(tzinfo=ZoneInfo(tzn)).astimezone(datetime.timezone(datetime.timedelta(hours=9)))
+            out[key] = {"name": name, "group": grp, "sym": sym, "price": round(px, 4), "t": tt.strftime("%Y-%m-%dT%H:%M:00.000+0900"), "chg": round((px / prv - 1) * 100, 2), "unit": "%"}
+            print("차트로 보충", key, out[key]["price"], out[key]["chg"])
+        except Exception as e: print("차트 보충 실패", key, repr(e)[:100])
+    res = {"asof": kst.isoformat(timespec="minutes"), "count": len(out), "items": out, "fng": fng(), "themes": themes(), "charts": CHs, "vkospi": vkospi(), "flows": flows(kst)}
     os.makedirs("data", exist_ok=True)
     with open("data/global.json", "w", encoding="utf-8") as f: json.dump(res, f, ensure_ascii=False, indent=1)
 if __name__ == "__main__": main()
