@@ -173,32 +173,38 @@ def charts(Q):
 def vkospi():
     """코스피200 변동성지수(VKOSPI, 한국 공포지수) — CNBC .KSVKOSPI (2026-10-15 확인). 현재가+일봉 이력.
     2026-10-16: CNBC 가 한국 지수 시세를 장 시작 전(새벽~09:00)에 비워 보내면 띠가 통째로 사라지던 문제 →
-    시세가 없거나 실패하면 직전 global.json 의 값을 stale=True 로 표시해 그대로 이어받는다."""
-    SYM = ".KSVKOSPI"; res = {}; old = None
+    시세가 없으면 ①직전 global.json 값 ②일봉 마지막 마감값 순으로 stale=True 로 표시해 이어받는다."""
+    SYM = ".KSVKOSPI"; res = {}; old = None; hist = []; herr = ""
     try:
         with open("data/global.json", encoding="utf-8") as fh: old = json.load(fh).get("vkospi")
     except Exception: old = None
-    def carry(why):
-        if old and old.get("price") is not None:
-            o = dict(old); o["stale"] = True; o["stale_why"] = why
-            print("VKOSPI 직전값 유지:", o["price"], o.get("t"), why); return o
-        return None
-    try:
-        r = cnbc_fetch([SYM]).get(SYM)
-        p = num((r or {}).get("last")); pct = num((r or {}).get("change_pct"))
-        if p is None or pct is None: print("VKOSPI 시세 없음"); return carry("no-quote")
-        res = {"src": "cnbc", "sym": SYM, "price": p, "pct": pct, "chg": num(r.get("change")), "prev": num(r.get("previous_day_closing")), "t": r.get("last_time"), "hist": []}
-    except Exception as e:
-        print("VKOSPI 실패:", repr(e)[:120]); return carry("error")
     try:
         now = datetime.datetime.now(datetime.timezone.utc)
         s = (now - datetime.timedelta(days=380)).strftime("%Y%m%d") + "000000"; e = (now + datetime.timedelta(days=2)).strftime("%Y%m%d") + "000000"
         db = _bars(json.loads(raw("https://ts-api.cnbc.com/harmony/app/bars/%s/1D/%s/%s/adjusted/EXTENDED.json" % (urllib.request.quote(SYM, safe="@.="), s, e), CH, tries=2)))
-        res["hist"] = [["%s-%s-%s" % (b["tradeTime"][:4], b["tradeTime"][4:6], b["tradeTime"][6:8]), round(float(b["close"]), 2)] for b in db][-260:]
+        hist = [["%s-%s-%s" % (b["tradeTime"][:4], b["tradeTime"][4:6], b["tradeTime"][6:8]), round(float(b["close"]), 2)] for b in db][-260:]
     except Exception as e:
-        res["hist_err"] = repr(e)[:120]
-    if not res["hist"] and old and old.get("hist"): res["hist"] = old["hist"]
-    print("VKOSPI:", res["price"], res["pct"], "hist", len(res["hist"]), res.get("hist_err", ""))
+        herr = repr(e)[:120]
+    if not hist and old and old.get("hist"): hist = old["hist"]
+    def fallback(why):
+        if old and old.get("price") is not None:
+            o = dict(old); o["stale"] = True; o["stale_why"] = why
+            if hist: o["hist"] = hist
+            print("VKOSPI 직전값 유지:", o["price"], o.get("t"), why); return o
+        if len(hist) >= 2:
+            d1, p1 = hist[-1]; p0 = hist[-2][1]
+            o = {"src": "cnbc-bars", "sym": SYM, "price": p1, "pct": round((p1 / p0 - 1) * 100, 2), "chg": round(p1 - p0, 2), "prev": p0, "t": d1 + "T15:45:00.000+0900", "hist": hist[:-1], "stale": True, "stale_why": why}
+            print("VKOSPI 일봉 마감값 사용:", d1, p1, why); return o
+        return None
+    try:
+        r = cnbc_fetch([SYM]).get(SYM)
+        p = num((r or {}).get("last")); pct = num((r or {}).get("change_pct"))
+        if p is None or pct is None: print("VKOSPI 시세 없음"); return fallback("no-quote")
+        res = {"src": "cnbc", "sym": SYM, "price": p, "pct": pct, "chg": num(r.get("change")), "prev": num(r.get("previous_day_closing")), "t": r.get("last_time"), "hist": hist}
+    except Exception as e:
+        print("VKOSPI 실패:", repr(e)[:120]); return fallback("error")
+    if herr: res["hist_err"] = herr
+    print("VKOSPI:", res["price"], res["pct"], "hist", len(res["hist"]), herr)
     return res
 def flows(kst):
     """코스피·코스닥 투자자별 순매수(억원) — 네이버 m.stock.naver.com/api/index/<코드>/trend (2026-10-15 확인, 장중엔 잠정치). 날짜별 이력은 이전 global.json 에서 이어받는다."""
