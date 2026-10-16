@@ -251,14 +251,16 @@ def night_fut(kst):
             return {"d": d, "c": cl, "chg": chg, "pct": round(chg / base * 100, 2) if base else None,
                     "o": K.num(r.get("TDD_OPNPRC")), "h": K.num(r.get("TDD_HGPRC")), "l": K.num(r.get("TDD_LWPRC")),
                     "vol": K.num(r.get("ACC_TRDVOL")), "name": str(r.get("ISU_NM", "")).strip()}
-        night = day = None
+        night = day = None; hist = []
         for r in rows:
             lab = str(r.get("TRD_DD", ""))
             if night is None and "(야간)" in lab: night = pack(r)
             if day is None and "(주간)" in lab: day = pack(r)
+            x = pack(r)
+            if x and len(hist) < 14: x["s"] = "야간" if "(야간)" in lab else "주간"; hist.append(x)
         print("야간선물", night, "주간", day)
         if not night: return None
-        return {"night": night, "day": day, "src": "KRX 정보데이터시스템 [15003] 최근월물 시세 추이(선물)", "fetched": kst.isoformat(timespec="minutes")}
+        return {"night": night, "day": day, "hist": hist, "src": "KRX 정보데이터시스템 [15003] 최근월물 시세 추이(선물)", "fetched": kst.isoformat(timespec="minutes")}
     except Exception as e:
         print("야간선물 실패:", type(e).__name__, str(e)[:120]); return None
 
