@@ -120,7 +120,7 @@ def probe_charts():
             with urllib.request.urlopen(req, timeout=20) as r: print("차트진단 OK", u[:90], r.read(500))
         except Exception as e:
             print("차트진단 실패", u[:90], repr(e)[:100])
-CHART_KEYS = ["spx","ixic","dji","sox","es","nq","vix","tnx","dxy","krw","wti","gold","kospi","kosdaq","n225","hsi","sh"]
+CHART_KEYS = ["spx","ixic","dji","sox","es","nq","vix","tnx","dxy","krw","wti","gold","kospi","kosdaq","n225","hsi","sh","ewy"]
 CH = dict(UA, Origin="https://www.cnbc.com", Referer="https://www.cnbc.com/")
 def _bars(j):
     pb = (j.get("barData") or {}).get("priceBars")
@@ -128,7 +128,7 @@ def _bars(j):
     return pb
 from zoneinfo import ZoneInfo
 ET = ZoneInfo("America/New_York")
-TZ = {"spx": ("America/New_York", "뉴욕시간"), "ixic": ("America/New_York", "뉴욕시간"), "dji": ("America/New_York", "뉴욕시간"), "sox": ("America/New_York", "뉴욕시간"), "vix": ("America/New_York", "뉴욕시간"), "tnx": ("America/New_York", "뉴욕시간"), "kospi": ("Asia/Seoul", "한국시간"), "kosdaq": ("Asia/Seoul", "한국시간"), "n225": ("Asia/Tokyo", "도쿄시간"), "hsi": ("Asia/Hong_Kong", "홍콩시간"), "sh": ("Asia/Shanghai", "상하이시간")}
+TZ = {"spx": ("America/New_York", "뉴욕시간"), "ixic": ("America/New_York", "뉴욕시간"), "dji": ("America/New_York", "뉴욕시간"), "sox": ("America/New_York", "뉴욕시간"), "ewy": ("America/New_York", "뉴욕시간"), "vix": ("America/New_York", "뉴욕시간"), "tnx": ("America/New_York", "뉴욕시간"), "kospi": ("Asia/Seoul", "한국시간"), "kosdaq": ("Asia/Seoul", "한국시간"), "n225": ("Asia/Tokyo", "도쿄시간"), "hsi": ("Asia/Hong_Kong", "홍콩시간"), "sh": ("Asia/Shanghai", "상하이시간")}
 def charts(Q):
     out = {}
     now = datetime.datetime.now(datetime.timezone.utc)
@@ -146,7 +146,7 @@ def charts(Q):
         except Exception as e:
             print("차트 실패", key, csym, repr(e)[:150]); continue
         try:
-            tzn, tzl = TZ.get(key, ("Asia/Seoul", "한국시간")); tzo = ZoneInfo(tzn); us = key in ("spx", "ixic", "dji", "sox")
+            tzn, tzl = TZ.get(key, ("Asia/Seoul", "한국시간")); tzo = ZoneInfo(tzn); us = key in ("spx", "ixic", "dji", "sox", "ewy")
             pts = []
             for b in ib:
                 t = datetime.datetime.strptime(b["tradeTime"][:12], "%Y%m%d%H%M").replace(tzinfo=ET).astimezone(tzo)
