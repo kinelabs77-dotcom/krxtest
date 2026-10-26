@@ -141,10 +141,13 @@ def charts(Q):
         if not csym: continue
         qs = urllib.request.quote(csym, safe="@.=")
         try:
-            ib = _bars(json.loads(raw("https://ts-api.cnbc.com/harmony/app/charts/1D.json?symbol=" + qs, CH, tries=2)))
             db = _bars(json.loads(raw("https://ts-api.cnbc.com/harmony/app/bars/%s/1D/%s/%s/adjusted/EXTENDED.json" % (qs, s14, e14), CH, tries=2)))
         except Exception as e:
             print("차트 실패", key, csym, repr(e)[:150]); continue
+        try:  # 2026-10-27: 장중 분봉이 비어도(휴장·주말·일시 오류) 일봉 차트는 살린다 — 분봉 실패가 차트 전체를 지우던 문제
+            ib = _bars(json.loads(raw("https://ts-api.cnbc.com/harmony/app/charts/1D.json?symbol=" + qs, CH, tries=2)))
+        except Exception as e:
+            print("분봉 없음(일봉만 사용)", key, csym, repr(e)[:100]); ib = []
         try:
             tzn, tzl = TZ.get(key, ("Asia/Seoul", "한국시간")); tzo = ZoneInfo(tzn); us = key in ("spx", "ixic", "dji", "sox", "ewy")
             pts = []
@@ -157,8 +160,10 @@ def charts(Q):
             if key in ("kospi", "kosdaq", "n225", "hsi", "sh", "twii") and pts:
                 dl = pts[-1][0].date(); pts = [p for p in pts if p[0].date() == dl]
             inter = [[hm, c] for _, hm, c in pts]
-            d0 = pts[0][0].strftime("%Y%m%d")
-            wd = "월화수목금토일"[pts[0][0].weekday()]
+            if pts: d0 = pts[0][0].strftime("%Y%m%d")
+            else:  # 분봉이 없으면(휴장 등) 마지막 일봉 날짜를 기준 날짜로 쓴다 — 예전에는 여기서 IndexError 로 차트 전체가 사라졌다
+                d0 = db[-1]["tradeTime"][:8]; print("분봉 없음 → 일봉 기준일 사용", key, d0)
+            wd = "월화수목금토일"[datetime.datetime.strptime(d0, "%Y%m%d").weekday()]
             cl = [float(b["close"]) for b in db]
             def ma(n): return [round(sum(cl[i - n + 1:i + 1]) / n, 2) if i >= n - 1 else None for i in range(len(cl))]
             m20, m60 = ma(20), ma(60)
