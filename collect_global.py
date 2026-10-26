@@ -237,14 +237,27 @@ def flows(kst):
     out.update(res)
     print("수급:", date, "확정" if final else "장중", json.dumps(res))
     return out
+def _krx_retry(K, data, tries=4):
+    """KRX 로그인·조회를 최대 tries회 재시도(간헐적 403·일시 차단 대비). 대기 0·4·10·20초. 끝내 실패하면 마지막 예외를 올린다."""
+    waits = [0, 4, 10, 20]; last = None
+    for i in range(tries):
+        if waits[i % len(waits)]: time.sleep(waits[i % len(waits)])
+        try:
+            if K.login():
+                K._logged["tries"] = 0  # 재시도 때문에 늘어난 로그인 횟수가 krx_post 의 자체 재로그인을 막지 않도록
+                return K.krx_post(data)
+            last = RuntimeError("KRX 로그인 실패")
+        except Exception as e:
+            last = e
+        print(f"야간선물: KRX 시도 {i+1}/{tries} 실패 — {type(last).__name__}: {str(last)[:100]}")
+    raise last
 def night_fut(kst):
     """코스피200 최근월물 선물 야간·주간 시세 — KRX 정보데이터시스템 [15003](MDCSTAT12701, 로그인 필요: KRX_ID/KRX_PW). 실패하면 None(다른 지표엔 영향 없음)."""
     try:
         if not (os.environ.get("KRX_ID") and os.environ.get("KRX_PW")): print("야간선물: KRX 시크릿 없음"); return None
         import collect_krx as K
-        if not K.login(): print("야간선물: KRX 로그인 실패"); return None
         td = datetime.timedelta
-        rows = K.krx_post({"bld": "dbms/MDC/STAT/standard/MDCSTAT12701", "locale": "ko_KR", "prodId": "KR___FUK2I",
+        rows = _krx_retry(K, {"bld": "dbms/MDC/STAT/standard/MDCSTAT12701", "locale": "ko_KR", "prodId": "KR___FUK2I",
                            "strtDd": (kst - td(days=100)).strftime("%Y%m%d"), "endDd": kst.strftime("%Y%m%d"),
                            "aggBasTpCd": "", "share": "1", "money": "3", "csvxls_isNo": "false"})
         def pack(r):
