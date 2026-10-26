@@ -10,7 +10,7 @@ ITEMS = [
  ("spx","S&P500","us",".SPX","pct"), ("ixic","나스닥","us",".IXIC","pct"), ("dji","다우","us",".DJI","pct"), ("sox","필라델피아반도체","us",".SOX","pct"),
  ("es","S&P500 선물","fut","@ES.1","pct"), ("nq","나스닥 선물","fut","@NQ.1","pct"),
  ("vix","VIX","risk",".VIX","pct"), ("tnx","미 10년물 금리","risk","US10Y","bp"), ("dxy","달러인덱스","risk",".DXY","pct"),
- ("krw","원/달러","fx","KRW=","pct"), ("wti","WTI 유가","com","@CL.1","pct"), ("gold","금","com","@GC.1","pct"), ("btc","비트코인(24시간)","com",None,"pct"),
+ ("krw","원/달러","fx","KRW=","pct"), ("wti","WTI 유가","com","@CL.1","pct"), ("gold","금","com","@GC.1","pct"), ("silver","은","com","@SI.1","pct"), ("btc","비트코인(24시간)","com",None,"pct"), ("eth","이더리움(24시간)","com",None,"pct"),
  ("ewy","EWY(한국ETF)","kr","EWY","pct"), ("kospi","코스피","kr",".KS11","pct"), ("kosdaq","코스닥","kr",".KQ11","pct"),
  ("n225","닛케이225","asia",".N225","pct"), ("hsi","항셍","asia",".HSI","pct"), ("sh","상해종합","asia",".SSEC","pct"), ("twii","대만 가권","asia",".TWII","pct"),
  ("nvda","엔비디아","stk","NVDA","pct"), ("tsm","TSMC(ADR)","stk","TSM","pct"),
@@ -92,8 +92,9 @@ def naver_idx(code):
 def naver_fx():
     j = json.loads(raw("https://m.stock.naver.com/front-api/marketIndex/productDetail?category=exchange&reutersCode=FX_USDKRW", tries=2))["result"]
     return {"price": num(j["closePrice"]), "pct": num(j["fluctuationsRatio"]) * (-1 if j.get("fluctuationsType", {}).get("name") == "FALLING" else 1), "chg": None, "t": j.get("localTradedAt")}
-def btc():
-    j = json.loads(raw("https://api.exchange.coinbase.com/products/BTC-USD/stats", tries=2))
+COIN = {"btc": "BTC-USD", "eth": "ETH-USD"}  # 2026-10-27: 이더리움 추가(코인베이스 24시간 통계)
+def btc(key="btc"):
+    j = json.loads(raw("https://api.exchange.coinbase.com/products/%s/stats" % COIN[key], tries=2))
     last, op = num(j["last"]), num(j["open"])
     return {"price": last, "pct": (last / op - 1) * 100, "chg": last - op, "t": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="minutes")}
 def fng():
@@ -120,7 +121,7 @@ def probe_charts():
             with urllib.request.urlopen(req, timeout=20) as r: print("차트진단 OK", u[:90], r.read(500))
         except Exception as e:
             print("차트진단 실패", u[:90], repr(e)[:100])
-CHART_KEYS = ["spx","ixic","dji","sox","es","nq","vix","tnx","dxy","krw","wti","gold","kospi","kosdaq","n225","hsi","sh","ewy","twii"]
+CHART_KEYS = ["spx","ixic","dji","sox","es","nq","vix","tnx","dxy","krw","wti","gold","silver","kospi","kosdaq","n225","hsi","sh","ewy","twii"]
 CH = dict(UA, Origin="https://www.cnbc.com", Referer="https://www.cnbc.com/")
 def _bars(j):
     pb = (j.get("barData") or {}).get("priceBars")
@@ -292,7 +293,7 @@ def main():
     for key, name, grp, sym, kind in ITEMS:
         d = None
         try:
-            if key == "btc": d = btc()
+            if key in COIN: d = btc(key)
             elif pick(Q, key, sym) is not None:
                 r = pick(Q, key, sym); p = num(r.get("last")); pct = num(r.get("change_pct")); ch = num(r.get("change"))
                 if p is not None and pct is not None: d = {"price": p, "pct": pct, "chg": ch, "t": r.get("last_time")}
@@ -300,7 +301,7 @@ def main():
             if d is None and key == "krw": d = naver_fx()
         except Exception as e: print("실패", key, repr(e)[:100])
         if not d or d["price"] is None: print("없음", key); continue
-        row = {"name": name, "group": grp, "sym": sym or "BTC-USD", "price": round(d["price"], 4), "t": d["t"]}
+        row = {"name": name, "group": grp, "sym": sym or COIN.get(key, ""), "price": round(d["price"], 4), "t": d["t"]}
         if kind == "bp" and d.get("chg") is not None: row["chg"] = round(d["chg"] * 100, 1); row["unit"] = "bp"
         else: row["chg"] = round(d["pct"], 2); row["unit"] = "%"
         out[key] = row
