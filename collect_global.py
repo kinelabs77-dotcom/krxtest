@@ -10,7 +10,7 @@ ITEMS = [
  ("spx","S&P500","us",".SPX","pct"), ("ixic","나스닥","us",".IXIC","pct"), ("dji","다우","us",".DJI","pct"), ("sox","필라델피아반도체","us",".SOX","pct"),
  ("es","S&P500 선물","fut","@ES.1","pct"), ("nq","나스닥 선물","fut","@NQ.1","pct"),
  ("vix","VIX","risk",".VIX","pct"), ("tnx","미 10년물 금리","risk","US10Y","bp"), ("dxy","달러인덱스","risk",".DXY","pct"),
- ("krw","원/달러","fx","KRW=","pct"), ("wti","WTI 유가","com","@CL.1","pct"), ("gold","금","com","@GC.1","pct"), ("silver","은","com","@SI.1","pct"), ("btc","비트코인(24시간)","com",None,"pct"), ("eth","이더리움(24시간)","com",None,"pct"),
+ ("krw","원/달러","fx","KRW=","pct"), ("wti","WTI 유가","com","@CL.1","pct"), ("gold","금","com","@GC.1","pct"), ("silver","은","com","@SI.1","pct"), ("btc","비트코인","com",None,"pct"), ("eth","이더리움","com",None,"pct"),
  ("ewy","EWY(한국ETF)","kr","EWY","pct"), ("kospi","코스피","kr",".KS11","pct"), ("kosdaq","코스닥","kr",".KQ11","pct"),
  ("n225","닛케이225","asia",".N225","pct"), ("hsi","항셍","asia",".HSI","pct"), ("sh","상해종합","asia",".SSEC","pct"), ("twii","대만 가권","asia",".TWII","pct"),
  ("nvda","엔비디아","stk","NVDA","pct"), ("tsm","TSMC(ADR)","stk","TSM","pct"),
@@ -92,11 +92,18 @@ def naver_idx(code):
 def naver_fx():
     j = json.loads(raw("https://m.stock.naver.com/front-api/marketIndex/productDetail?category=exchange&reutersCode=FX_USDKRW", tries=2))["result"]
     return {"price": num(j["closePrice"]), "pct": num(j["fluctuationsRatio"]) * (-1 if j.get("fluctuationsType", {}).get("name") == "FALLING" else 1), "chg": None, "t": j.get("localTradedAt")}
-COIN = {"btc": "BTC-USD", "eth": "ETH-USD"}  # 2026-10-27: 이더리움 추가(코인베이스 24시간 통계)
-def btc(key="btc"):
-    j = json.loads(raw("https://api.exchange.coinbase.com/products/%s/stats" % COIN[key], tries=2))
-    last, op = num(j["last"]), num(j["open"])
-    return {"price": last, "pct": (last / op - 1) * 100, "chg": last - op, "t": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="minutes")}
+COIN = {"btc": "KRW-BTC", "eth": "KRW-ETH"}  # 2026-10-27: 토스증권처럼 가상자산은 원화(업비트) 가격·전일 대비
+def btc(key="btc", fx=None):
+    try:
+        j = json.loads(raw("https://api.upbit.com/v1/ticker?markets=" + COIN[key], tries=2))[0]
+        ts = datetime.datetime.fromtimestamp(j["trade_timestamp"] / 1000, datetime.timezone(datetime.timedelta(hours=9)))
+        return {"price": float(j["trade_price"]), "pct": float(j["signed_change_rate"]) * 100, "chg": float(j["signed_change_price"]), "t": ts.isoformat(timespec="minutes")}
+    except Exception as e:  # 업비트가 막히면 코인베이스 달러값 × 원/달러 환율로 대신한다(김치 프리미엄만큼 오차)
+        print("업비트 실패 → 코인베이스×환율:", key, repr(e)[:100])
+        if not fx: raise
+        j = json.loads(raw("https://api.exchange.coinbase.com/products/%s-USD/stats" % key.upper(), tries=2))
+        last, op = num(j["last"]), num(j["open"])
+        return {"price": last * fx, "pct": (last / op - 1) * 100, "chg": (last - op) * fx, "t": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="minutes")}
 def fng():
     try:
         j = json.loads(raw("https://production.dataviz.cnn.io/index/fearandgreed/graphdata", CNN_H, tries=2))
@@ -293,7 +300,7 @@ def main():
     for key, name, grp, sym, kind in ITEMS:
         d = None
         try:
-            if key in COIN: d = btc(key)
+            if key in COIN: d = btc(key, (out.get("krw") or {}).get("price"))
             elif pick(Q, key, sym) is not None:
                 r = pick(Q, key, sym); p = num(r.get("last")); pct = num(r.get("change_pct")); ch = num(r.get("change"))
                 if p is not None and pct is not None: d = {"price": p, "pct": pct, "chg": ch, "t": r.get("last_time")}
