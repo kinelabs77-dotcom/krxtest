@@ -266,7 +266,7 @@ def night_fut(kst):
         import collect_krx as K
         td = datetime.timedelta
         rows = _krx_retry(K, {"bld": "dbms/MDC/STAT/standard/MDCSTAT12701", "locale": "ko_KR", "prodId": "KR___FUK2I",
-                           "strtDd": (kst - td(days=100)).strftime("%Y%m%d"), "endDd": kst.strftime("%Y%m%d"),
+                           "strtDd": (kst - td(days=100)).strftime("%Y%m%d"), "endDd": (kst + td(days=3)).strftime("%Y%m%d"),
                            "aggBasTpCd": "", "share": "1", "money": "3", "csvxls_isNo": "false"})
         def pack(r):
             cl = K.num(r.get("TDD_CLSPRC")); chg = K.num(r.get("CMPPREVDD_PRC"))
