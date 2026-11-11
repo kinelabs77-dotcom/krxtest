@@ -2,8 +2,8 @@ name: 장중 현재가 수집
 on:
   schedule:
     # UTC 기준. 한국시간 09:00~15:30 사이 30분마다 + 14:45 (평일)
-    - cron: "*/30 0-6 * * 1-5"
-    - cron: "45 5 * * 1-5"
+    - cron: "11,41 0-6 * * 1-5"
+    - cron: "47 5 * * 1-5"
   workflow_dispatch:
 permissions:
   contents: write
