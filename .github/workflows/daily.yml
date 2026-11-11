@@ -1,8 +1,11 @@
 name: KRX 전종목 일봉·수급 수집
 on:
   schedule:
-    - cron: "5 7 * * 1-5"
-    - cron: "50 9 * * 1-5"
+    # 몰림 시각을 피해 분을 옮기고 보조 실행 추가 (2026-11-11: 예약 실행 지연 대응)
+    - cron: "23 7 * * 1-5"
+    - cron: "43 8 * * 1-5"
+    - cron: "53 9 * * 1-5"
+    - cron: "37 10 * * 1-5"
   workflow_dispatch:
     inputs:
       mode:
