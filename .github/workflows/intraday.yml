@@ -1,37 +1,65 @@
 name: 장중 현재가 수집
 on:
   schedule:
-    # UTC 기준. GitHub 예약 실행은 늦거나 건너뛰는 일이 잦아서 같은 시각을 여러 줄로 겹쳐 둡니다(한국시간 09:00~15:40, 15분 간격).
-    - cron: "5,20,35,50 0-6 * * 1-5"
-    - cron: "47 5 * * 1-5"
+    # UTC 기준. GitHub 예약 실행은 늦거나 건너뛰는 일이 잦아서(2026-11-18 장중 예약 실행 0회), 한 번 시작되면 장이 끝날 때까지 스스로 10분마다 반복 수집하고 6시간 한도 전에 다음 실행을 이어 붙입니다.
+    # 한국시간 평일 08:30 / 08:55 / 09:20 / 09:50 ... 에 시작 시도(이미 도는 중이면 대기하다 장 종료 후 바로 끝남).
+    - cron: "30,55 23 * * 0-4"
+    - cron: "20,50 0-5 * * 1-5"
   workflow_dispatch:
+    inputs:
+      force:
+        description: "1 이면 시간 제한 없이 1회만 수집(저장소 반영 안 함, 시험용)"
+        required: false
+        default: "0"
 permissions:
   contents: write
+  actions: write
 concurrency:
   group: intraday-collect
   cancel-in-progress: false
 jobs:
   collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: 수집
+      - name: 장중 반복 수집 (10분 간격, 15:30까지)
         env:
           KRX_ID: ${{ secrets.KRX_ID }}
           KRX_PW: ${{ secrets.KRX_PW }}
-        run: python collect_intraday.py
-      - name: 저장소에 반영
+          GH_TOKEN: ${{ github.token }}
+          FORCE: ${{ github.event.inputs.force }}
         run: |
+          kst() { TZ=Asia/Seoul date "$@"; }
+          hm() { echo $((10#$(kst +%H%M))); }
+          if [ "${FORCE:-0}" = "1" ]; then python collect_intraday.py; exit 0; fi
+          if [ "$(kst +%u)" -ge 6 ]; then echo "주말"; exit 0; fi
+          H=$(hm)
+          if [ "$H" -lt 830 ] || [ "$H" -gt 1535 ]; then echo "장 시간이 아님($H)"; exit 0; fi
+          START=$(date +%s)
+          LIMIT=$((START + 335*60))
           git config user.name "krx-collector"
           git config user.email "krx-collector@users.noreply.github.com"
-          git add data/intraday.json
-          if git diff --cached --quiet; then echo "변경 없음"; exit 0; fi
-          git commit -m "intraday: $(TZ=Asia/Seoul date +'%Y-%m-%d %H:%M')"
-          for i in 1 2 3; do
-            git pull --rebase --autostash && git push && break
-            sleep 5
+          while [ "$(hm)" -lt 900 ]; do sleep 30; done
+          while [ "$(hm)" -le 1531 ]; do
+            T0=$(date +%s)
+            python collect_intraday.py || echo "수집 실패(다음 회차에 재시도)"
+            git add data/intraday.json
+            if ! git diff --cached --quiet; then
+              git commit -m "intraday: $(kst +'%Y-%m-%d %H:%M')"
+              for i in 1 2 3; do
+                git pull --rebase --autostash && git push && break
+                sleep 5
+              done
+            fi
+            if [ "$(hm)" -ge 1521 ]; then break; fi
+            if [ "$(date +%s)" -ge "$LIMIT" ]; then
+              gh workflow run intraday.yml && echo "6시간 한도 전에 다음 실행을 이어 붙임"
+              break
+            fi
+            S=$((600 - ($(date +%s) - T0)))
+            if [ "$S" -gt 0 ]; then sleep "$S"; fi
           done
