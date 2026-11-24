@@ -1,8 +1,8 @@
 {
- "updated_at": "2026-11-24T07:12:50.013008+09:00",
- "last_date": "2026-11-23",
+ "updated_at": "2026-11-25T03:57:03.173743+09:00",
+ "last_date": "2026-11-24",
  "bar_gaps": [],
  "flow_gaps": [],
- "stocks": 2827,
+ "stocks": 2828,
  "source": "KRX MDCSTAT01501(전종목 시세) + MDCSTAT02401(외국인 9000·기관 7050 순매수, 원) + MDCSTAT00301(지수)"
 }
